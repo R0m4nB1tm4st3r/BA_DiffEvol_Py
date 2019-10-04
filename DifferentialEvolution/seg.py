@@ -218,26 +218,42 @@ def DoImageSegmentation(image, thresholdValues):
     - image: image to be segmentated
     - thresholdValues: limit graylevels defining the classes
     """
-    newImage = np.copy(image)
-    values = np.arange(1, dtype=np.uint8)
-    values = np.append(values, thresholdValues[0:thresholdValues.size - 1])
-    condList = [newImage < thresholdValues[i] for i in range(thresholdValues.size)]
+    color_image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+    #newImage = np.copy(image)
+    #values = np.arange(1, dtype=np.uint8)
+    #values = np.arange(3*(K-1), dtype=np.uint8).reshape(K-1, 3)
+    #values[0:K-1] = rgbColorList[0:K-1]
+    #values = np.append(values, thresholdValues[0:thresholdValues.size - 1])
+    #condList = [image < thresholdValues[i] for i in range(thresholdValues.size)]
 
-    newImage = np.select(condList, values, thresholdValues[thresholdValues.size - 1])
-    return newImage
+    #newImage = np.select(condList, values, thresholdValues[thresholdValues.size - 1])
+    #color_image = np.select(condList, values, rgbColorList[(rgbColorList.shape[0]) - 1])
+    for i in range(image.shape[0]):
+        for j in range(image.shape[1]):
+            for k in range(K-2):
+                if image[i, j] <= thresholdValues[k]:
+                    color_image[i, j] = rgbColorList[k]
+                elif image[i, j] > thresholdValues[k] and image[i, j] <= thresholdValues[k+1]:
+                    color_image[i, j] = rgbColorList[k+1]
+                elif image[i, j] > thresholdValues[thresholdValues.size-1]:
+                    color_image[i, j] = rgbColorList[thresholdValues.size]
+                    break
+    #color_image = np.array([], dtype=np.uint8)
+    return color_image
 #############################################################################################################################
 #####################################--Globals--#############################################################################
 #############################################################################################################################
-K = 5
-G = 250
+K = 4
+G = 750
 img1 = GetImage('Y:\MobileOcr\Bilder\TestSet_DivBauteile\All_Images\good\IMG_1255_DLXFFNICKLT_c.jpg', cv2.IMREAD_GRAYSCALE)
 #tesseract_testImage = Image.open("opencv-logo2.png")
 #img1 = cv2.fastNlMeansDenoising(img1, None, 5, 5, 77)
 #img1 = cv2.medianBlur(img1, 3)
 #img1 = gaussian_filter(img1, sigma=0.73, order=2)
-ShowImage(img1)
+#ShowImage(img1)
 h = CalculateNormalizedHistogram(img1)
 graylevels = np.arange(256)
+rgbColorList = np.array([[0, 0, 0], [255, 102, 102], [255, 255, 102], [102, 255, 102], [255, 255, 255]], dtype=np.uint8)
 #############################################################################################################################
 #######################################--Main--##############################################################################
 #############################################################################################################################
@@ -266,7 +282,6 @@ if __name__ == "__main__":
 
         newImage = DoImageSegmentation(img1, thresholdValues)
 
-        plotFigure.suptitle("Results of Differential Evolution Algorithm with " + str(G) + " iterations", fontsize=14)
         plotFigure.set_dpi(200)
 
         currentTime = time.strftime("%H:%M:%S").replace(":", "_")
@@ -282,10 +297,10 @@ if __name__ == "__main__":
         plotAxes[0].set_xlabel("Graylevel g")
         plotAxes[0].set_ylabel("n_Pixel_relative")
         plotAxes[0].set_title("Mean Square Error: " + str(bestParams[1]))
-        plotAxes[1] = plt.imshow(newImage, cmap='gray', vmin=0, vmax=255)
+        plotAxes[1] = plt.imshow(newImage, cmap='gray')
         plotAxes[1].axes.set_title("Result of Image Segmentation")
         plt.tight_layout()
-        plt.savefig("IMG_1255_DLXFFNICKLT_c-" + "SEG_Plot-" + currentDate + "-" + currentTime + "-" + str(G) + "-" + str(K) + ".png", format="png", dpi=200)
+        plt.savefig("IMG_1255_DLXFFNICKLT_c-" + "SEG_Plot-" + currentDate + "-" + currentTime + "-" + str(G) + "-" + str(K) + ".jpg", dpi=200)
         plt.show()
 
         SaveImage(newImage, fileName)
@@ -304,10 +319,3 @@ if __name__ == "__main__":
                   "confidence: {1}, text: {2}".format(i, conf, ocrResult, **box))
 
         print("Do you wish to make another plot? (y/n)")
-
-#top=0.902,
-#bottom=0.026,
-#left=0.065,
-#right=0.978,
-#hspace=0.3,
-#wspace=0.2
