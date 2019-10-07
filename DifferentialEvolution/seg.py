@@ -172,6 +172,9 @@ def CalculateThresholdValues(param_list, classNum):
     - classNum: number of classes
     """
     thresholdValues = np.arange(classNum - 1, dtype=np.uint8)
+    #numRow = sp.math.factorial(classNum-1)
+    #numCol = classNum-1
+    #thresholdValues = np.arange(numCol*numRow).reshape(numRow, numCol)
     indexOrder = np.argsort(param_list[classNum:classNum * 2])
 
     P = [param_list[indexOrder[i]] for i in range(classNum)]
@@ -185,29 +188,34 @@ def CalculateThresholdValues(param_list, classNum):
 
         p = np.poly1d([a, b, c], False, "T")
         p_roots = np.roots(p)
+        p.dtype = np.uint8
+        r1 = np.real(p_roots[0])
+        r2 = np.real(p_roots[1])
         if p_roots.size == 1:
-            thresholdValues[i] = p_roots[0]
-        elif p_roots[0] == p_roots[1]:
-            thresholdValues[i] = p_roots[0]
-        elif p_roots[0] < 0:
-            thresholdValues[i] = p_roots[1]
-        elif p_roots[1] < 0:
-            thresholdValues[i] = p_roots[0]
-        elif p_roots[0] > 255:
-            thresholdValues[i] = p_roots[1]
-        elif p_roots[1] > 255:
-            thresholdValues[i] = p_roots[0]
+            thresholdValues[i] = r1
+        elif r1 == r2:
+            thresholdValues[i] = r1
+        elif r1 < 0:
+            thresholdValues[i] = r2
+        elif r2 < 0:
+            thresholdValues[i] = r1
+        elif r1 > 255:
+            thresholdValues[i] = r2
+        elif r2 > 255:
+            thresholdValues[i] = r1
         else:
+            r1 = np.amin(p_roots)
+            r2 = np.amax(p_roots)
             if i > 0:
-                if not(np.amin(p_roots) <= thresholdValues[i-1]):
-                    thresholdValues[i] = np.amin(p_roots)
+                if r1 >= thresholdValues[i-1]:
+                    thresholdValues[i] = r1
                 else:
-                    thresholdValues[i] = np.amax(p_roots)
+                    thresholdValues[i] = r2
             else:
-                if np.amin(p_roots) <= my[i]:
-                    thresholdValues[i] = np.amax(p_roots)
+                if (r1 >= my[i]) and (r1 < my[i+1]):
+                    thresholdValues[i] = r1
                 else:
-                    thresholdValues[i] = np.amin(p_roots)
+                    thresholdValues[i] = r2
 
     return thresholdValues
 #############################################################################################################################
@@ -230,30 +238,30 @@ def DoImageSegmentation(image, thresholdValues):
     #color_image = np.select(condList, values, rgbColorList[(rgbColorList.shape[0]) - 1])
     for i in range(image.shape[0]):
         for j in range(image.shape[1]):
-            for k in range(K-2):
-                if image[i, j] <= thresholdValues[k]:
-                    color_image[i, j] = rgbColorList[k]
-                elif image[i, j] > thresholdValues[k] and image[i, j] <= thresholdValues[k+1]:
+            for k in range(K-2, -1, -1):
+                if image[i, j] > thresholdValues[k]:
                     color_image[i, j] = rgbColorList[k+1]
-                elif image[i, j] > thresholdValues[thresholdValues.size-1]:
-                    color_image[i, j] = rgbColorList[thresholdValues.size]
                     break
+                else:
+                    color_image[i, j] = rgbColorList[0]
     #color_image = np.array([], dtype=np.uint8)
     return color_image
 #############################################################################################################################
 #####################################--Globals--#############################################################################
 #############################################################################################################################
 K = 4
-G = 750
+G = 300
 img1 = GetImage('Y:\MobileOcr\Bilder\TestSet_DivBauteile\All_Images\good\IMG_1255_DLXFFNICKLT_c.jpg', cv2.IMREAD_GRAYSCALE)
 #tesseract_testImage = Image.open("opencv-logo2.png")
-#img1 = cv2.fastNlMeansDenoising(img1, None, 5, 5, 77)
+img1 = cv2.fastNlMeansDenoising(img1, None, 4, 7, 21)
 #img1 = cv2.medianBlur(img1, 3)
 #img1 = gaussian_filter(img1, sigma=0.73, order=2)
 #ShowImage(img1)
 h = CalculateNormalizedHistogram(img1)
 graylevels = np.arange(256)
-rgbColorList = np.array([[0, 0, 0], [255, 102, 102], [255, 255, 102], [102, 255, 102], [255, 255, 255]], dtype=np.uint8)
+                        # black     # red          # yellow       # green         # white
+#rgbColorList = np.array([[0, 0, 0], [153, 0, 0], [153, 153, 0], [76, 153, 0], [255, 255, 255]], dtype=np.uint8)
+rgbColorList = np.array([[0, 0, 0], [102, 0, 0], [102, 102, 0], [255, 255, 255]], dtype=np.uint8)
 #############################################################################################################################
 #######################################--Main--##############################################################################
 #############################################################################################################################
@@ -263,7 +271,7 @@ if __name__ == "__main__":
     t_min = np.array([])
     t_max = np.array([])
     t_min = np.append(t_min, [list(repeat(0., K)), list(repeat(0., K)), list(repeat(0., K))]) 
-    t_max = np.append(t_max, [list(repeat(1., K)), list(repeat(255., K)), list(repeat(12., K))]) 
+    t_max = np.append(t_max, [list(repeat(1., K)), list(repeat(255., K)), list(repeat(7., K))]) 
 
     print("Press Enter to start")
 
