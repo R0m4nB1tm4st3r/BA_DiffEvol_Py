@@ -249,19 +249,19 @@ def DoImageSegmentation(image, thresholdValues):
 #############################################################################################################################
 #####################################--Globals--#############################################################################
 #############################################################################################################################
-K = 4
-G = 300
+K = 5
+G = 500
 img1 = GetImage('Y:\MobileOcr\Bilder\TestSet_DivBauteile\All_Images\good\IMG_1255_DLXFFNICKLT_c.jpg', cv2.IMREAD_GRAYSCALE)
 #tesseract_testImage = Image.open("opencv-logo2.png")
-img1 = cv2.fastNlMeansDenoising(img1, None, 4, 7, 21)
+img1 = cv2.fastNlMeansDenoising(img1, None, 7, 7, 21)
 #img1 = cv2.medianBlur(img1, 3)
 #img1 = gaussian_filter(img1, sigma=0.73, order=2)
 #ShowImage(img1)
 h = CalculateNormalizedHistogram(img1)
 graylevels = np.arange(256)
                         # black     # red          # yellow       # green         # white
-#rgbColorList = np.array([[0, 0, 0], [153, 0, 0], [153, 153, 0], [76, 153, 0], [255, 255, 255]], dtype=np.uint8)
-rgbColorList = np.array([[0, 0, 0], [102, 0, 0], [102, 102, 0], [255, 255, 255]], dtype=np.uint8)
+rgbColorList = np.array([[0, 0, 0], [102, 0, 0], [102, 102, 0], [76, 153, 0], [255, 255, 255]], dtype=np.uint8)
+#rgbColorList = np.array([[0, 0, 0], [102, 0, 0], [102, 102, 0], [255, 255, 255]], dtype=np.uint8)
 #############################################################################################################################
 #######################################--Main--##############################################################################
 #############################################################################################################################
@@ -271,30 +271,46 @@ if __name__ == "__main__":
     t_min = np.array([])
     t_max = np.array([])
     t_min = np.append(t_min, [list(repeat(0., K)), list(repeat(0., K)), list(repeat(0., K))]) 
-    t_max = np.append(t_max, [list(repeat(1., K)), list(repeat(255., K)), list(repeat(7., K))]) 
+    t_max = np.append(t_max, [list(repeat(1., K)), list(repeat(255., K)), list(repeat(6., K))]) 
+
+    np.random.seed(123)
+    test_population = InitializePopulation(3*10*K, 3*K)
+    de_handle = de.DE_Handler(0.25, 0.8, G, 3*10*K, test_population, CalcErrorEstimation, True, t_min, t_max)
+
+    x = 0
 
     print("Press Enter to start")
 
     while input() != "n":
+        x = x + 1
 
         print("Optimizing...")
-        np.random.seed(123)
-        plotFigure, plotAxes = CreateSubplotGrid(2, 1, False)
-
-        test_population = InitializePopulation(3*10*K, 3*K)
-        de_handle = de.DE_Handler(0.3, 0.70, G, 3*10*K, test_population, CalcErrorEstimation, True, t_min, t_max)
+        
+        valHistFigure, valHistAxes = CreateSubplotGrid(1, 1, False)
 
         bestParams, bestValueHistory = de_handle.DE_GetBestParameters()
         bestMember = t_min + bestParams[0] * ( t_max - t_min )
+
         thresholdValues = CalculateThresholdValues(bestMember, K)
 
         newImage = DoImageSegmentation(img1, thresholdValues)
 
-        plotFigure.set_dpi(200)
+        
 
         currentTime = time.strftime("%H:%M:%S").replace(":", "_")
         currentDate = time.strftime("%d/%m/%Y").replace("/", "_")
-        fileName = "IMG_1255_DLXFFNICKLT_c-" + "SEG_Test-" + currentDate + "-" + currentTime + "-" + str(G) + "-" + str(K) + ".jpg"
+        fileName = "IMG_1255_DLXFFNICKLT_c-" + "SEG_Test-" + currentDate + "-" + currentTime + "-" + "G_" + str(G) + "-" + "K_" + str(K) + "-" + str(x) + ".jpg"
+
+        valHistAxes.plot(range(1, G+1), bestValueHistory)
+        valHistAxes.set_xlabel("Iteration Number")
+        valHistAxes.set_ylabel("Mean Square Error")
+        valHistAxes.set_title("Mean Square Error History through iterations of DE run " + str(x))
+        plt.savefig("IMG_1255_DLXFFNICKLT_c-" + "objFuncHist-" + currentDate + "-" + currentTime + "-" + "G_" + str(G) + "-" + "K_" + str(K) + "-" + str(x) + ".jpg", dpi=200)
+        plt.show()
+
+        plotFigure, plotAxes = CreateSubplotGrid(2, 1, False)
+
+        plotFigure.set_dpi(200)
 
         plotAxes[0].plot(graylevels, h)
         plotAxes[0].plot(graylevels, SumOfGauss(bestMember, K, graylevels))
@@ -308,7 +324,7 @@ if __name__ == "__main__":
         plotAxes[1] = plt.imshow(newImage, cmap='gray')
         plotAxes[1].axes.set_title("Result of Image Segmentation")
         plt.tight_layout()
-        plt.savefig("IMG_1255_DLXFFNICKLT_c-" + "SEG_Plot-" + currentDate + "-" + currentTime + "-" + str(G) + "-" + str(K) + ".jpg", dpi=200)
+        plt.savefig("IMG_1255_DLXFFNICKLT_c-" + "SEG_Plot-" + currentDate + "-" + currentTime + "-" + "G_" + str(G) + "-" + "K_" + str(K) + "-" + str(x) + ".jpg", dpi=200)
         plt.show()
 
         SaveImage(newImage, fileName)

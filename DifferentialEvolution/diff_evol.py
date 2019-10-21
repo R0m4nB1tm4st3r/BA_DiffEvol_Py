@@ -4,8 +4,12 @@
 import numpy as np
 import random as rand
 import time
+import multiprocessing as mp
 
 from itertools import repeat
+from itertools import count
+from itertools import starmap
+from functools import partial
 #############################################################################################################################
 #####################################--Class Declarations--##################################################################
 #############################################################################################################################
@@ -40,8 +44,11 @@ class DE_Handler(object):
         """ Finds the member of the current population that yields the best value for the Objective Function
         (doesn't need to be called externally)
         """
-        values = np.array([self.ObjectiveFunction(self.minBounds + self.population[p] * (self.maxBounds - self.minBounds)) for p in range(self.Np)])
-
+        denormalization = lambda p : self.minBounds + p * (self.maxBounds - self.minBounds)
+        denormPopulation = np.array(list(map(denormalization, self.population)))
+        values = np.array(list(map(self.ObjectiveFunction, denormPopulation)))
+        #values = np.array([self.ObjectiveFunction(self.minBounds + self.population[p] * (self.maxBounds - self.minBounds)) for p in range(self.Np)])
+        
         if self.minimizeFlag == True:
             best = (self.population[np.argmin(values)], np.amin(values))
         else:
@@ -49,7 +56,7 @@ class DE_Handler(object):
 
         return best, values
 #############################################################################################################################
-    def GetMutantVector(self, bestParams, memberIndex):
+    def GetMutantVector(self, memberIndex, bestParams):
         """ Calculates the Mutant Vectors for the current population
         (doesn't need to be called externally)
 
@@ -94,7 +101,9 @@ class DE_Handler(object):
         """
 
         best, currentValues = self.EvaluatePopulation()
-        self.population = [self.SelectVector(self.GetMutantVector(best[0], j), self.population[j], currentValues[j]) for j in range(self.Np)]
+        mutantVectors = np.array(list(map(partial(self.GetMutantVector, bestParams=best[0]), range(self.Np))))
+        #self.population = [self.SelectVector(self.GetMutantVector(j, best[0]), self.population[j], currentValues[j]) for j in range(self.Np)]
+        self.population = np.array(list(starmap(self.SelectVector, zip(mutantVectors, self.population, currentValues))))
         return best[1]
 #############################################################################################################################
     def DE_GetBestParameters(self):
@@ -102,6 +111,8 @@ class DE_Handler(object):
         """
         t0 = time.time()
         bestValueHistory = np.array([self.DE_Optimization() for _ in range(self.G)])
+        #bestValueHistory = np.array(list(map(self.DE_Optimization, repeat(1, self.Np))))
+        #bestValueHistory = np.array(list(starmap(self.DE_Optimization, repeat((), self.G))))
         print(time.time()-t0)
         best, currentValues = self.EvaluatePopulation()
         return best, bestValueHistory
