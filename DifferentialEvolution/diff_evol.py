@@ -39,6 +39,9 @@ class DE_Handler(object):
         self.minimizeFlag = minimizeFlag
         self.minBounds = minBounds
         self.maxBounds = maxBounds
+
+        rand.seed(789)
+        np.random.seed(456)
 #############################################################################################################################
     def EvaluatePopulation(self):
         """ Finds the member of the current population that yields the best value for the Objective Function
@@ -46,8 +49,10 @@ class DE_Handler(object):
         """
         denormalization = lambda p : self.minBounds + p * (self.maxBounds - self.minBounds)
         denormPopulation = np.array(list(map(denormalization, self.population)))
-        values = np.array(list(map(self.ObjectiveFunction, denormPopulation)))
-        #values = np.array([self.ObjectiveFunction(self.minBounds + self.population[p] * (self.maxBounds - self.minBounds)) for p in range(self.Np)])
+
+        with mp.Pool(processes=4) as p:
+            values = np.array(list(p.map(self.ObjectiveFunction, denormPopulation)))
+        #values = np.array(list((self.ObjectiveFunction(self.minBounds + self.population[p] * (self.maxBounds - self.minBounds)) for p in range(self.Np))))
         
         if self.minimizeFlag == True:
             best = (self.population[np.argmin(values)], np.amin(values))
@@ -63,6 +68,7 @@ class DE_Handler(object):
         - bestParams: param vector of the best member in current population
         - memberIndex: index of the currently evaluated member of the present population
         """
+        
 
         randChoice = np.random.randint(0, self.Np-1, 6)
         randNumbers = np.random.choice(randChoice[randChoice != memberIndex], 2)
@@ -81,6 +87,7 @@ class DE_Handler(object):
         - value: return value of the objective function for the current member
         """
 
+        
         r = rand.randint(0, v.size-1)
         L = 1
         while rand.random() <= self.Cr and L < v.size:
@@ -101,16 +108,23 @@ class DE_Handler(object):
         """
 
         best, currentValues = self.EvaluatePopulation()
-        mutantVectors = np.array(list(map(partial(self.GetMutantVector, bestParams=best[0]), range(self.Np))))
-        #self.population = [self.SelectVector(self.GetMutantVector(j, best[0]), self.population[j], currentValues[j]) for j in range(self.Np)]
-        self.population = np.array(list(starmap(self.SelectVector, zip(mutantVectors, self.population, currentValues))))
+        #mutationFunc = self.GetMutantVector
+        #selectionFunc = self.SelectVector
+        #with mp.Pool(processes=4) as p:
+            #mutantVectors = np.array(list(p.map(partial(self.GetMutantVector, bestParams=best[0]), range(self.Np))))
+        self.population = np.array([self.SelectVector(self.GetMutantVector(j, best[0]), self.population[j], currentValues[j]) for j in range(self.Np)])
+        
+            #self.population = np.array(list(p.starmap(self.SelectVector, zip(mutantVectors, self.population, currentValues))))
+
         return best[1]
 #############################################################################################################################
     def DE_GetBestParameters(self):
         """ starts the optimization process and then returns the last found best parameters
         """
+        optimizationFunc = self.DE_Optimization
         t0 = time.time()
-        bestValueHistory = np.array([self.DE_Optimization() for _ in range(self.G)])
+
+        bestValueHistory = np.array(list((self.DE_Optimization() for _ in range(self.G))))
         #bestValueHistory = np.array(list(map(self.DE_Optimization, repeat(1, self.Np))))
         #bestValueHistory = np.array(list(starmap(self.DE_Optimization, repeat((), self.G))))
         print(time.time()-t0)

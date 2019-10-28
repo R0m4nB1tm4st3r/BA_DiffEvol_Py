@@ -10,6 +10,7 @@ import random as rand
 import time
 import diff_evol as de
 import os
+import sys
 
 from tesserocr import PyTessBaseAPI, RIL
 from PIL import Image
@@ -143,7 +144,7 @@ def CalcErrorEstimation(param_list):
     histogram = h 
     o = 1.5
 
-    result = sum(( SumOfGauss(param_list, classNum, g_lvls) - histogram ) ** 2) / g_lvls.size + abs(sum(param_list[:classNum]) - 1) * o
+    result = (sum(( SumOfGauss(param_list, classNum, g_lvls) - histogram ) ** 2) / g_lvls.size) + (abs(sum(param_list[:classNum]) - 1) * o)
     return result
 #############################################################################################################################
 def TestFunction_SimpleParabolic(x):
@@ -251,7 +252,7 @@ def DoImageSegmentation(image, thresholdValues):
 #############################################################################################################################
 K = 5
 G = 500
-img1 = GetImage('Y:\MobileOcr\Bilder\TestSet_DivBauteile\All_Images\good\IMG_1255_DLXFFNICKLT_c.jpg', cv2.IMREAD_GRAYSCALE)
+img1 = GetImage('IMG_1255_DLXFFNICKLT_c.jpg', cv2.IMREAD_GRAYSCALE)
 #tesseract_testImage = Image.open("opencv-logo2.png")
 img1 = cv2.fastNlMeansDenoising(img1, None, 7, 7, 21)
 #img1 = cv2.medianBlur(img1, 3)
@@ -262,11 +263,14 @@ graylevels = np.arange(256)
                         # black     # red          # yellow       # green         # white
 rgbColorList = np.array([[0, 0, 0], [102, 0, 0], [102, 102, 0], [76, 153, 0], [255, 255, 255]], dtype=np.uint8)
 #rgbColorList = np.array([[0, 0, 0], [102, 0, 0], [102, 102, 0], [255, 255, 255]], dtype=np.uint8)
+
 #############################################################################################################################
 #######################################--Main--##############################################################################
 #############################################################################################################################
 if __name__ == "__main__":
     print('Hello World')
+
+    sys.setcheckinterval(1000000)
 
     t_min = np.array([])
     t_max = np.array([])
