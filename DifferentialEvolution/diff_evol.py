@@ -47,12 +47,12 @@ class DE_Handler(object):
         """ Finds the member of the current population that yields the best value for the Objective Function
         (doesn't need to be called externally)
         """
-        denormalization = lambda p : self.minBounds + p * (self.maxBounds - self.minBounds)
-        denormPopulation = np.array(list(map(denormalization, self.population)))
+        #denormalization = lambda p : self.minBounds + p * (self.maxBounds - self.minBounds)
+        #denormPopulation = np.array(list(map(denormalization, self.population)))
 
-        with mp.Pool(processes=4) as p:
-            values = np.array(list(p.map(self.ObjectiveFunction, denormPopulation)))
-        #values = np.array(list((self.ObjectiveFunction(self.minBounds + self.population[p] * (self.maxBounds - self.minBounds)) for p in range(self.Np))))
+        #with mp.Pool(processes=4) as p:
+            #values = np.array(list(p.map(self.ObjectiveFunction, denormPopulation)))
+        values = np.array(list((self.ObjectiveFunction(self.minBounds + self.population[p] * (self.maxBounds - self.minBounds)) for p in range(self.Np))))
         
         if self.minimizeFlag == True:
             best = (self.population[np.argmin(values)], np.amin(values))

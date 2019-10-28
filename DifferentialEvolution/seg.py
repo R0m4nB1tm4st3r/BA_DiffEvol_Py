@@ -11,6 +11,7 @@ import time
 import diff_evol as de
 import os
 import sys
+import csv
 
 from tesserocr import PyTessBaseAPI, RIL
 from PIL import Image
@@ -191,32 +192,33 @@ def CalculateThresholdValues(param_list, classNum):
         p_roots = np.roots(p)
         p.dtype = np.uint8
         r1 = np.real(p_roots[0])
-        r2 = np.real(p_roots[1])
         if p_roots.size == 1:
             thresholdValues[i] = r1
-        elif r1 == r2:
-            thresholdValues[i] = r1
-        elif r1 < 0:
-            thresholdValues[i] = r2
-        elif r2 < 0:
-            thresholdValues[i] = r1
-        elif r1 > 255:
-            thresholdValues[i] = r2
-        elif r2 > 255:
-            thresholdValues[i] = r1
         else:
-            r1 = np.amin(p_roots)
-            r2 = np.amax(p_roots)
-            if i > 0:
-                if r1 >= thresholdValues[i-1]:
-                    thresholdValues[i] = r1
-                else:
-                    thresholdValues[i] = r2
+            r2 = np.real(p_roots[1])
+            if r1 == r2:
+                thresholdValues[i] = r1
+            elif r1 < 0:
+                thresholdValues[i] = r2
+            elif r2 < 0:
+                thresholdValues[i] = r1
+            elif r1 > 255:
+                thresholdValues[i] = r2
+            elif r2 > 255:
+                thresholdValues[i] = r1
             else:
-                if (r1 >= my[i]) and (r1 < my[i+1]):
-                    thresholdValues[i] = r1
+                r1 = np.amin(p_roots)
+                r2 = np.amax(p_roots)
+                if i > 0:
+                    if r1 >= thresholdValues[i-1]:
+                        thresholdValues[i] = r1
+                    else:
+                        thresholdValues[i] = r2
                 else:
-                    thresholdValues[i] = r2
+                    if (r1 >= my[i]) and (r1 < my[i+1]):
+                        thresholdValues[i] = r1
+                    else:
+                        thresholdValues[i] = r2
 
     return thresholdValues
 #############################################################################################################################
@@ -250,9 +252,16 @@ def DoImageSegmentation(image, thresholdValues):
 #############################################################################################################################
 #####################################--Globals--#############################################################################
 #############################################################################################################################
-K = 5
-G = 500
-img1 = GetImage('IMG_1255_DLXFFNICKLT_c.jpg', cv2.IMREAD_GRAYSCALE)
+K = 2
+G = 5000
+
+print("Put in the Test Number:")
+testNumber = int(input())
+print("Put in the path to the target image:")
+imageString = input()
+
+#imageString = 'IMG_1255_DLXFFNICKLT_c'
+img1 = GetImage(imageString + '.jpg', cv2.IMREAD_GRAYSCALE)
 #tesseract_testImage = Image.open("opencv-logo2.png")
 img1 = cv2.fastNlMeansDenoising(img1, None, 7, 7, 21)
 #img1 = cv2.medianBlur(img1, 3)
@@ -268,9 +277,18 @@ rgbColorList = np.array([[0, 0, 0], [102, 0, 0], [102, 102, 0], [76, 153, 0], [2
 #######################################--Main--##############################################################################
 #############################################################################################################################
 if __name__ == "__main__":
+    F = 0.25
+    Cr = 0.8
     print('Hello World')
 
-    sys.setcheckinterval(1000000)
+    currentDate = time.strftime("%d/%m/%Y").replace("/", "_")
+    de_test_csv = open("de_test" + currentDate + ".csv", mode = "a")
+    csv_writer = csv.writer(de_test_csv, \
+        delimiter=';', \
+        quoting=csv.QUOTE_MINIMAL)
+
+    if os.stat(de_test_csv.name).st_size == 0:
+        csv_writer.writerow(["Test Number", "Image Name", "Execution Time", "Number of Classes K", "Number of Iterations G", "Mutation Factor F", "Crossover Rate Cr", "Tesseract Read Result"])
 
     t_min = np.array([])
     t_max = np.array([])
@@ -279,14 +297,15 @@ if __name__ == "__main__":
 
     np.random.seed(123)
     test_population = InitializePopulation(3*10*K, 3*K)
-    de_handle = de.DE_Handler(0.25, 0.8, G, 3*10*K, test_population, CalcErrorEstimation, True, t_min, t_max)
+    de_handle = de.DE_Handler(F, Cr, G, 3*10*K, test_population, CalcErrorEstimation, True, t_min, t_max)
+    de_param_string = "G_" + str(G) + "-" + "K_" + str(K) + "-" + "F_" + str(F) + "-" + "Cr_" + str(Cr)
 
-    x = 0
+    #x = 0
 
     print("Press Enter to start")
 
     while input() != "n":
-        x = x + 1
+        #x = x + 1
 
         print("Optimizing...")
         
@@ -299,17 +318,15 @@ if __name__ == "__main__":
 
         newImage = DoImageSegmentation(img1, thresholdValues)
 
-        
-
         currentTime = time.strftime("%H:%M:%S").replace(":", "_")
-        currentDate = time.strftime("%d/%m/%Y").replace("/", "_")
-        fileName = "IMG_1255_DLXFFNICKLT_c-" + "SEG_Test-" + currentDate + "-" + currentTime + "-" + "G_" + str(G) + "-" + "K_" + str(K) + "-" + str(x) + ".jpg"
+        timeString = currentDate + "-" + currentTime
+        segImgFileName = imageString + "-" + "SEG_Test-" + timeString + "-" + de_param_string + ".jpg" #+ "-" + "No_" + str(x) + ".jpg"
 
         valHistAxes.plot(range(1, G+1), bestValueHistory)
         valHistAxes.set_xlabel("Iteration Number")
         valHistAxes.set_ylabel("Mean Square Error")
         valHistAxes.set_title("Mean Square Error History through iterations of DE run " + str(x))
-        plt.savefig("IMG_1255_DLXFFNICKLT_c-" + "objFuncHist-" + currentDate + "-" + currentTime + "-" + "G_" + str(G) + "-" + "K_" + str(K) + "-" + str(x) + ".jpg", dpi=200)
+        plt.savefig(imageString + "-" + "objFuncHist-" + timeString + "-" + de_param_string + ".jpg", dpi=200) #"-" + "No_" + str(x) + ".jpg", dpi=200)
         plt.show()
 
         plotFigure, plotAxes = CreateSubplotGrid(2, 1, False)
@@ -328,11 +345,12 @@ if __name__ == "__main__":
         plotAxes[1] = plt.imshow(newImage, cmap='gray')
         plotAxes[1].axes.set_title("Result of Image Segmentation")
         plt.tight_layout()
-        plt.savefig("IMG_1255_DLXFFNICKLT_c-" + "SEG_Plot-" + currentDate + "-" + currentTime + "-" + "G_" + str(G) + "-" + "K_" + str(K) + "-" + str(x) + ".jpg", dpi=200)
+        plt.savefig(imageString + "-" + "SEG_Plot-" + timeString + "-" + de_param_string + ".jpg", dpi=200)# + "-" + "No_" + str(x) + ".jpg", dpi=200)
         plt.show()
 
-        SaveImage(newImage, fileName)
-        seg_image = Image.open(fileName)
+        SaveImage(newImage, segImgFileName)
+        seg_image = Image.open(segImgFileName)
+        ocrEndResult = ""
 
         with PyTessBaseAPI() as api:
             api.SetImage(seg_image)
@@ -345,5 +363,8 @@ if __name__ == "__main__":
                 conf = api.MeanTextConf()
                 print(u"Box[{0}]: x={x}, y={y}, w={w}, h={h}, "
                   "confidence: {1}, text: {2}".format(i, conf, ocrResult, **box))
+                ocrEndResult += ocrResult
+
+        csv_writer.writerow([testNumber, imageString, currentTime, K, G, F, Cr, ocrEndResult])
 
         print("Do you wish to make another plot? (y/n)")
