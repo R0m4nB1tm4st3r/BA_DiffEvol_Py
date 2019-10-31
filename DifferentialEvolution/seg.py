@@ -261,8 +261,8 @@ testNumber = int(input())
 #imageString = input()
 
 imgStrings = np.array(["IMG_1255_DLXFFNICKLT_c", "IMG_1324_DLXFFNICKLT_c", "IMG_1349_0ZTTM0TUN3H_c", "IMG_1555_7D91CX6GNPA_c"])
-images = np.array(list((GetImage(imgStrings[i] + ".jpg", cv2.IMREAD_GRAYSCALE) for i in range(4))))
-#images = np.array(list((cv2.fastNlMeansDenoising(GetImage(imgStrings[i] + ".jpg", cv2.IMREAD_GRAYSCALE), None, 10, 7, 21) for i in range(4))))
+#images = np.array(list((GetImage(imgStrings[i] + ".jpg", cv2.IMREAD_GRAYSCALE) for i in range(4))))
+images = np.array(list((cv2.fastNlMeansDenoising(GetImage(imgStrings[i] + ".jpg", cv2.IMREAD_GRAYSCALE), None, 10, 7, 21) for i in range(4))))
 
 #img1 = GetImage(imageString + '.jpg', cv2.IMREAD_GRAYSCALE)
 #img1 = cv2.fastNlMeansDenoising(img1, None, 10, 7, 21)
@@ -284,8 +284,8 @@ rgbColorList = np.array([[  0,    0,    0], \
 #######################################--Main--##############################################################################
 #############################################################################################################################
 if __name__ == "__main__":
-    F = 0.25
-    Cr = 0.1
+    F = 0.8
+    Cr = 1.
 
     currentDate = time.strftime("%d/%m/%Y").replace("/", "_")
     de_test_csv = open("de_test" + currentDate + ".csv", mode = "a")
