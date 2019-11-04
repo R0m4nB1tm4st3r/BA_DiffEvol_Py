@@ -252,22 +252,15 @@ def DoImageSegmentation(image, thresholdValues):
 #############################################################################################################################
 #####################################--Globals--#############################################################################
 #############################################################################################################################
-K = 2
+K = 4
 G = 5000
 
 print("Put in the Test Number to start with:")
 testNumber = int(input())
-#print("Put in the path to the target image:")
-#imageString = input()
 
 imgStrings = np.array(["IMG_1255_DLXFFNICKLT_c", "IMG_1324_DLXFFNICKLT_c", "IMG_1349_0ZTTM0TUN3H_c", "IMG_1555_7D91CX6GNPA_c"])
-#images = np.array(list((GetImage(imgStrings[i] + ".jpg", cv2.IMREAD_GRAYSCALE) for i in range(4))))
-images = np.array(list((cv2.fastNlMeansDenoising(GetImage(imgStrings[i] + ".jpg", cv2.IMREAD_GRAYSCALE), None, 10, 7, 21) for i in range(4))))
-
-#img1 = GetImage(imageString + '.jpg', cv2.IMREAD_GRAYSCALE)
-#img1 = cv2.fastNlMeansDenoising(img1, None, 10, 7, 21)
-#img1 = cv2.medianBlur(img1, 3)
-#img1 = gaussian_filter(img1, sigma=0.73, order=2)
+images = np.array(list((GetImage(imgStrings[i] + ".jpg", cv2.IMREAD_GRAYSCALE) for i in range(4))))
+#images = np.array(list((cv2.fastNlMeansDenoising(GetImage(imgStrings[i] + ".jpg", cv2.IMREAD_GRAYSCALE), None, 10, 7, 21) for i in range(4))))
 
 graylevels = np.arange(256)
 
@@ -284,8 +277,10 @@ rgbColorList = np.array([[  0,    0,    0], \
 #######################################--Main--##############################################################################
 #############################################################################################################################
 if __name__ == "__main__":
-    F = 0.8
-    Cr = 1.
+    # 0.25, 0.5, 0.25, 0.8
+    F = 0.5
+    # 0.8, 0.9, 0.1, 1.0
+    Cr = 0.9
 
     currentDate = time.strftime("%d/%m/%Y").replace("/", "_")
     de_test_csv = open("de_test" + currentDate + ".csv", mode = "a")
@@ -335,7 +330,7 @@ if __name__ == "__main__":
         valHistAxes.set_ylabel("Mean Square Error")
         valHistAxes.set_title("Mean Square Error History through iterations of DE")# run " + str(x))
         plt.savefig(imgStrings[j] + "-" + "objFuncHist-" + timeString + "-" + de_param_string + ".jpg", dpi=200) #"-" + "No_" + str(x) + ".jpg", dpi=200)
-        plt.show()
+        #plt.show(block=False)
 
         plotFigure, plotAxes = CreateSubplotGrid(2, 1, False)
 
@@ -354,7 +349,7 @@ if __name__ == "__main__":
         plotAxes[1].axes.set_title("Result of Image Segmentation")
         plt.tight_layout()
         plt.savefig(imgStrings[j] + "-" + "SEG_Plot-" + timeString + "-" + de_param_string + ".jpg", dpi=200)# + "-" + "No_" + str(x) + ".jpg", dpi=200)
-        plt.show()
+        #plt.show(block=False)
 
         newImage = cv2.cvtColor(newImage, cv2.COLOR_RGB2BGR)
 
