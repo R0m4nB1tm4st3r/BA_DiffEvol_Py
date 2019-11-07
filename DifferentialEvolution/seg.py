@@ -252,7 +252,7 @@ def DoImageSegmentation(image, thresholdValues):
 #############################################################################################################################
 #####################################--Globals--#############################################################################
 #############################################################################################################################
-K = 4
+K = 5
 G = 5000
 
 print("Put in the Test Number to start with:")
@@ -280,7 +280,7 @@ if __name__ == "__main__":
     # 0.25, 0.5, 0.25, 0.8
     F = 0.25
     # 0.8, 0.9, 0.1, 1.0
-    Cr = 0.1
+    Cr = 0.8
 
     currentDate = time.strftime("%d/%m/%Y").replace("/", "_")
     de_test_csv = open("de_test" + currentDate + ".csv", mode = "a")
@@ -298,12 +298,7 @@ if __name__ == "__main__":
 
     de_param_string = "G_" + str(G) + "-" + "K_" + str(K) + "-" + "F_" + str(F) + "-" + "Cr_" + str(Cr)
 
-    #x = 0
-
-    #print("Press Enter to start")
-
-    for j in range(4):#while input() != "n":
-        #x = x + 1
+    for j in range(4):
         h = CalculateNormalizedHistogram(images[j])
 
         np.random.seed(123)
@@ -371,5 +366,3 @@ if __name__ == "__main__":
                 ocrEndResult += ocrResult
 
         csv_writer.writerow([j+testNumber, imgStrings[j], currentTime, K, G, F, Cr, ocrEndResult])
-
-        #print("Do you wish to make another plot? (y/n)")
