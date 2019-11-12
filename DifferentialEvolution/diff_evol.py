@@ -4,12 +4,7 @@
 import numpy as np
 import random as rand
 import time
-import multiprocessing as mp
 
-from itertools import repeat
-from itertools import count
-from itertools import starmap
-from functools import partial
 #############################################################################################################################
 #####################################--Class Declarations--##################################################################
 #############################################################################################################################
@@ -29,7 +24,7 @@ class DE_Handler(object):
     - maxBounds:            maximum values for parameters to find
     """
 
-    def __init__(self, F, Cr, G, Np, population, ObjectiveFunction, minimizeFlag, minBounds, maxBounds):
+    def __init__(self, F, Cr, G, Np, population, ObjectiveFunction, minimizeFlag, minBounds, maxBounds, objArgs):
         self.F = F
         self.Cr = Cr
         self.G = G
@@ -39,6 +34,7 @@ class DE_Handler(object):
         self.minimizeFlag = minimizeFlag
         self.minBounds = minBounds
         self.maxBounds = maxBounds
+        self.objArgs = objArgs
 
         rand.seed(789)
         np.random.seed(456)
@@ -50,9 +46,7 @@ class DE_Handler(object):
         #denormalization = lambda p : self.minBounds + p * (self.maxBounds - self.minBounds)
         #denormPopulation = np.array(list(map(denormalization, self.population)))
 
-        #with mp.Pool(processes=4) as p:
-            #values = np.array(list(p.map(self.ObjectiveFunction, denormPopulation)))
-        values = np.array(list((self.ObjectiveFunction(self.minBounds + self.population[p] * (self.maxBounds - self.minBounds)) for p in range(self.Np))))
+        values = np.array(list((self.ObjectiveFunction(self.minBounds + self.population[p] * (self.maxBounds - self.minBounds), *self.objArgs) for p in range(self.Np))))
         
         if self.minimizeFlag == True:
             best = (self.population[np.argmin(values)], np.amin(values))
@@ -69,7 +63,6 @@ class DE_Handler(object):
         - memberIndex: index of the currently evaluated member of the present population
         """
         
-
         randChoice = np.random.randint(0, self.Np-1, 6)
         randNumbers = np.random.choice(randChoice[randChoice != memberIndex], 2)
 
@@ -95,7 +88,7 @@ class DE_Handler(object):
 
         u = np.array([v[(r+i)%v.size] if i < L else p[(r+i)%v.size] for i in range(v.size)])
 
-        valueU = self.ObjectiveFunction(self.minBounds + u * (self.maxBounds - self.minBounds))
+        valueU = self.ObjectiveFunction(self.minBounds + u * (self.maxBounds - self.minBounds), *self.objArgs)
 
         if (valueU <= value and self.minimizeFlag == True) or (valueU >= value and self.minimizeFlag == False):
             return u
@@ -108,13 +101,7 @@ class DE_Handler(object):
         """
 
         best, currentValues = self.EvaluatePopulation()
-        #mutationFunc = self.GetMutantVector
-        #selectionFunc = self.SelectVector
-        #with mp.Pool(processes=4) as p:
-            #mutantVectors = np.array(list(p.map(partial(self.GetMutantVector, bestParams=best[0]), range(self.Np))))
         self.population = np.array([self.SelectVector(self.GetMutantVector(j, best[0]), self.population[j], currentValues[j]) for j in range(self.Np)])
-        
-            #self.population = np.array(list(p.starmap(self.SelectVector, zip(mutantVectors, self.population, currentValues))))
 
         return best[1]
 #############################################################################################################################
@@ -125,8 +112,6 @@ class DE_Handler(object):
         t0 = time.time()
 
         bestValueHistory = np.array(list((self.DE_Optimization() for _ in range(self.G))))
-        #bestValueHistory = np.array(list(map(self.DE_Optimization, repeat(1, self.Np))))
-        #bestValueHistory = np.array(list(starmap(self.DE_Optimization, repeat((), self.G))))
         print(time.time()-t0)
         best, currentValues = self.EvaluatePopulation()
         return best, bestValueHistory
