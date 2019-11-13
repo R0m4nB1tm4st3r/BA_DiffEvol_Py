@@ -9,6 +9,7 @@ import csv
 import os
 
 import diff_evol as de
+import objFuncs as obf
 import plot
 import seg
 
@@ -16,6 +17,19 @@ from tesserocr import PyTessBaseAPI, RIL
 from PIL import Image
 from itertools import repeat
 from scipy.stats import norm
+
+#############################################################################################################################
+#####################################--Functions--###########################################################################
+#############################################################################################################################
+def InitializePopulation(Np, paramNum):
+    """
+    initialize population with shape given by input parameters
+
+    - Np: 
+    - paramNum: 
+    """
+    population = np.random.rand(Np, paramNum)
+    return population
 
 #############################################################################################################################
 #####################################--Globals--#############################################################################
@@ -32,7 +46,7 @@ if __name__ == "__main__":
     Cr = 0.1
     o = 1.5
     K = 5
-    G = 5000
+    G = 50
 
     print("Put in the Test Number to start with:")
     testNumber = int(input())
@@ -72,22 +86,19 @@ if __name__ == "__main__":
         np.random.seed(123)
 
         # Initialize needed parameters for DE #
-        h = seg.CalculateNormalizedHistogram(images[j])
-        test_population = seg.InitializePopulation(3*10*K, 3*K)
+        h = obf.CalculateNormalizedHistogram(images[j])
+        test_population = InitializePopulation(3*10*K, 3*K)
         objArgs = (K, graylevels, h, o)
 
         # Execute DE and do Segmentation of the current image #
-        de_handle = de.DE_Handler(F, Cr, G, 3*10*K, test_population, seg.CalcErrorEstimation, True, t_min, t_max, objArgs)
+        de_handle = de.DE_Handler(F, Cr, G, 3*10*K, test_population, obf.CalcErrorEstimation, True, t_min, t_max, objArgs)
         bestParams, bestValueHistory = de_handle.DE_GetBestParameters()
         bestMember = bestParams[0]
-        thresholdValues = seg.CalculateThresholdValues(bestMember, K)
-        newImage = seg.DoImageSegmentation(images[j], thresholdValues, K, rgbColorList)
-        newImage = cv2.cvtColor(newImage, cv2.COLOR_RGB2BGR)
+        thresholdValues = obf.CalculateThresholdValues(bestMember, K)
+        newImage = obf.DoImageSegmentation(images[j], thresholdValues, K, rgbColorList)
         currentTime = time.strftime("%H:%M:%S").replace(":", "_")
         timeString = currentDate + "-" + currentTime
         segImgFileName = imgStrings[j] + "-" + "SEG_Test-" + timeString + "-" + de_param_string + ".jpg" #+ "-" + "No_" + str(x) + ".jpg"
-        seg.SaveImage(newImage, segImgFileName)
-        seg_image = Image.open(segImgFileName)
         ocrEndResult = ""
 
         # plot the Fitness values #
@@ -99,11 +110,16 @@ if __name__ == "__main__":
         plt.savefig(imgStrings[j] + "-" + "objFuncHist-" + timeString + "-" + de_param_string + ".jpg", dpi=200) #"-" + "No_" + str(x) + ".jpg", dpi=200)
         #plt.show(block=False)
 
+        # convert segmentated image to another color system and save #
+        newImage = cv2.cvtColor(newImage, cv2.COLOR_RGB2BGR)
+        seg.SaveImage(newImage, segImgFileName)
+        seg_image = Image.open(segImgFileName)
+
         # plot the DE and Segmentation results #
         plotFigure, plotAxes = plot.CreateSubplotGrid(2, 1, False)
         plotFigure.set_dpi(200)
         plotAxes[0].plot(graylevels, h)
-        plotAxes[0].plot(graylevels, seg.SumOfGauss(bestMember, K, graylevels))
+        plotAxes[0].plot(graylevels, obf.SumOfGauss(bestMember, K, graylevels))
         plotAxes[0].legend(("Histogram of the original Image", "Gaussian Approximation of the Histogram", ))
         plotAxes[0].vlines(thresholdValues, 0, np.amax(h), label="Threshold Values")
         for k in range(thresholdValues.size):
