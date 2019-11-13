@@ -4,7 +4,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>b11f6fb1-3108-4c80-828a-16773ae72d33</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>seg.py</StartupFile>
+    <StartupFile>main.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -24,6 +24,12 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="diff_evol.py" />
+    <Compile Include="main.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="plot.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="seg.py" />
   </ItemGroup>
   <ItemGroup>

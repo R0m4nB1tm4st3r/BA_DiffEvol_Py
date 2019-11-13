@@ -62,7 +62,9 @@ def SumOfGauss(param_list, classNum, g_lvls):
     - classNum: number of classes
     - g_lvls: list of graylevels
     """
-    return sum([param_list[i] * norm.pdf(g_lvls, loc=param_list[i + classNum], scale=param_list[i + classNum * 2]) for i in range(classNum)])
+    return sum([param_list[i] * norm.pdf(g_lvls, loc=param_list[i + classNum], \
+        scale=param_list[i + classNum * 2]) \
+        for i in range(classNum)])
 #############################################################################################################################
 def CalcErrorEstimation(param_list, classNum, g_lvls, histogram, o):
     """
@@ -70,13 +72,10 @@ def CalcErrorEstimation(param_list, classNum, g_lvls, histogram, o):
 
     - param_list: list of gaussian parameters (P1, P2, ... Pk, my1, my2, ... myk, sigma1, sigma2, ... sigmak - k is the number of classes) 
     """
-    #classNum = K
-    #g_lvls = graylevels
-    #histogram = h 
-    #o = 1.5
-
-    result = (sum(( SumOfGauss(param_list, classNum, g_lvls) - histogram ) ** 2) / g_lvls.size) + (abs(sum(param_list[:classNum]) - 1) * o)
-    return result
+    return (sum( \
+        ( SumOfGauss(param_list, classNum, g_lvls) - histogram ) ** 2) / g_lvls.size) + \
+        (abs(sum(param_list[:classNum]) - 1) * o)
+    #return result
 #############################################################################################################################
 #def GetSegmentFromMean(param_list, numOfSegments):
 

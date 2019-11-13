@@ -29,11 +29,11 @@ class DE_Handler(object):
         self.Cr = Cr
         self.G = G
         self.Np = Np
-        self.population = population
         self.ObjectiveFunction = ObjectiveFunction
         self.minimizeFlag = minimizeFlag
         self.minBounds = minBounds
         self.maxBounds = maxBounds
+        self.population = np.array([self.minBounds + population[p] * (self.maxBounds - self.minBounds) for p in range(self.Np)])
         self.objArgs = objArgs
 
         rand.seed(789)
@@ -46,8 +46,9 @@ class DE_Handler(object):
         #denormalization = lambda p : self.minBounds + p * (self.maxBounds - self.minBounds)
         #denormPopulation = np.array(list(map(denormalization, self.population)))
 
-        values = np.array(list((self.ObjectiveFunction(self.minBounds + self.population[p] * (self.maxBounds - self.minBounds), *self.objArgs) for p in range(self.Np))))
-        
+        #values = np.array(list((self.ObjectiveFunction(self.minBounds + self.population[p] * (self.maxBounds - self.minBounds), *self.objArgs) for p in range(self.Np))))
+        values = np.array(list((self.ObjectiveFunction(self.population[p], *self.objArgs) for p in range(self.Np))))
+
         if self.minimizeFlag == True:
             best = (self.population[np.argmin(values)], np.amin(values))
         else:
@@ -67,7 +68,11 @@ class DE_Handler(object):
         randNumbers = np.random.choice(randChoice[randChoice != memberIndex], 2)
 
         v = (bestParams + (self.population[randNumbers[0]] - self.population[randNumbers[1]]) * self.F)
-        v = np.select([v < 0, v > 1], [rand.random(), rand.random()], v)
+        #v = np.select([v < 0, v > 1], [rand.random(), rand.random()], v)
+        v = np.array([rand.uniform(self.minBounds[i], self.maxBounds[i]) \
+            if v[i] < self.minBounds[i] or v[i] > self.maxBounds[i] \
+            else v[i] \
+            for i in range(v.size)])
 
         return v
 #############################################################################################################################
@@ -88,7 +93,8 @@ class DE_Handler(object):
 
         u = np.array([v[(r+i)%v.size] if i < L else p[(r+i)%v.size] for i in range(v.size)])
 
-        valueU = self.ObjectiveFunction(self.minBounds + u * (self.maxBounds - self.minBounds), *self.objArgs)
+        #valueU = self.ObjectiveFunction(self.minBounds + u * (self.maxBounds - self.minBounds), *self.objArgs)
+        valueU = self.ObjectiveFunction(u, *self.objArgs)
 
         if (valueU <= value and self.minimizeFlag == True) or (valueU >= value and self.minimizeFlag == False):
             return u
@@ -108,7 +114,6 @@ class DE_Handler(object):
     def DE_GetBestParameters(self):
         """ starts the optimization process and then returns the last found best parameters
         """
-        optimizationFunc = self.DE_Optimization
         t0 = time.time()
 
         bestValueHistory = np.array(list((self.DE_Optimization() for _ in range(self.G))))

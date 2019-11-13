@@ -79,7 +79,7 @@ if __name__ == "__main__":
         # Execute DE and do Segmentation of the current image #
         de_handle = de.DE_Handler(F, Cr, G, 3*10*K, test_population, seg.CalcErrorEstimation, True, t_min, t_max, objArgs)
         bestParams, bestValueHistory = de_handle.DE_GetBestParameters()
-        bestMember = t_min + bestParams[0] * ( t_max - t_min )
+        bestMember = bestParams[0]
         thresholdValues = seg.CalculateThresholdValues(bestMember, K)
         newImage = seg.DoImageSegmentation(images[j], thresholdValues, K, rgbColorList)
         newImage = cv2.cvtColor(newImage, cv2.COLOR_RGB2BGR)
