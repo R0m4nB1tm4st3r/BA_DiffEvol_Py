@@ -5,7 +5,7 @@ import cv2
 from scipy.stats import norm
 
 #############################################################################################################################
-def CalculateRawHistogram(image):
+def OF1_CalculateRawHistogram(image):
     """
     calculate histogram for image that displays the absolute numbers of gray levels
 
@@ -17,14 +17,14 @@ def CalculateRawHistogram(image):
 
     return h
 #############################################################################################################################
-def CalculateNormalizedHistogram(image):
+def OF1_CalculateNormalizedHistogram(image):
     """
     calculate histogram for image that displays the relative numbers of gray levels
 
     - image: input image to calculate the histogram for
     """
 
-    raw = CalculateRawHistogram(image)
+    raw = OF1_CalculateRawHistogram(image)
     norm = np.zeros(256, np.float_)
 
     for i in range(256):
@@ -32,7 +32,7 @@ def CalculateNormalizedHistogram(image):
 
     return norm
 #############################################################################################################################
-def SumOfGauss(param_list, classNum, g_lvls):
+def OF1_SumOfGauss(param_list, classNum, g_lvls):
     """
     calculate histogram approximation as sum of gaussian probability density distribution functions
 
@@ -44,18 +44,18 @@ def SumOfGauss(param_list, classNum, g_lvls):
         scale=param_list[i + classNum * 2]) \
         for i in range(classNum)])
 #############################################################################################################################
-def CalcErrorEstimation(param_list, classNum, g_lvls, histogram, o):
+def OF1_CalcErrorEstimation(param_list, classNum, g_lvls, histogram, o):
     """
     calculate mean sqare error between histogram and gaussian approximation including penalty in case sum(Pi) != 1
 
     - param_list: list of gaussian parameters (P1, P2, ... Pk, my1, my2, ... myk, sigma1, sigma2, ... sigmak - k is the number of classes) 
     """
     return (sum( \
-        ( SumOfGauss(param_list, classNum, g_lvls) - histogram ) ** 2) / g_lvls.size) + \
+        ( OF1_SumOfGauss(param_list, classNum, g_lvls) - histogram ) ** 2) / g_lvls.size) + \
         (abs(sum(param_list[:classNum]) - 1) * o)
     #return result
 #############################################################################################################################
-def CalculateThresholdValues(param_list, classNum):
+def OF1_CalculateThresholdValues(param_list, classNum):
     """
     calculate threshold values for image segmentation
 
@@ -111,7 +111,7 @@ def CalculateThresholdValues(param_list, classNum):
 
     return thresholdValues
 #############################################################################################################################
-def DoImageSegmentation(image, thresholdValues, K, rgbColorList):
+def OF1_DoImageSegmentation(image, thresholdValues, K, rgbColorList):
     """
     examine segmentation on input image based on input threshold values
 
@@ -139,9 +139,47 @@ def DoImageSegmentation(image, thresholdValues, K, rgbColorList):
     #color_image = np.array([], dtype=np.uint8)
     return color_image
 #############################################################################################################################
-#def GetSegmentFromMean(param_list, numOfSegments):
+def OF2_Calc_InterClusterDistance(centers, inputData):
+    numOfSegments = centers.size
+    #listOfSegments = [[] for _ in range(numOfSegments)]
+    #distSum = 0
+
+    #it = np.nditer(inputData)
+
+    #while not it.finished:
+        #distances = [(it[0] - centers[i])**2 for i in range(numOfSegments)]
+        #distSum += sum(distances)
+        #it.iternext()
+
+    distSum = sum((sum([(d - centers[i])**2 for i in range(numOfSegments)]) for d in np.nditer(inputData)))
+
+    return distSum
 #############################################################################################################################
-def TestFunction_SimpleParabolic(x):
+def OF2_GetSegments(centers, inputData):
+    numOfSegments = centers.size
+    listOfSegments = [[] for _ in range(numOfSegments)]
+
+    it = np.nditer(inputData, flags=["multi_index"])
+
+    while not it.finished:
+        distances = np.array([(it[0] - centers[i])**2 for i in range(numOfSegments)])
+        listOfSegments[np.argmin(distances)].append(it.multi_index)
+        it.iternext()
+
+    return np.array(listOfSegments)
+#############################################################################################################################
+def OF2_DoImageSegmentation(segments, image, rgbColorList):
+    color_image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+
+    for s in range(segments.size):
+        for e in range(len(segments[s])):
+            color_image[segments[s][e]] = rgbColorList[s]
+
+    return color_image
+
+
+#############################################################################################################################
+def OF0_TestFunction_SimpleParabolic(x):
     """
     calculate the square of input x
 
