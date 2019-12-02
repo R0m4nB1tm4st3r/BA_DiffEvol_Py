@@ -81,7 +81,7 @@ def OF1_CalculateThresholdValues(param_list, classNum):
         p_roots = np.roots(p)
 
         if p_roots.size == 1:
-            thresholdValues[i] = np.real(p_roots[0])
+            thresholdValues[i] = (np.real(p_roots[0]), -1)
         else:
             r1 = np.real(p_roots[0])
             r2 = np.real(p_roots[1])

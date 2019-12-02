@@ -7,6 +7,7 @@ import cv2
 import time
 import csv
 import os
+import sys
 
 import diff_evol as de
 import objFuncs as obf
@@ -44,13 +45,13 @@ if __name__ == "__main__":
     F = 0.5
     Cr = 0.9
     o = 1.5
-    K = 2
-    G = 100
+    K = 4
+    G = 5000
     populationSize_OF2 = 5*K
     numOfImgs = 17
-    #imageID = 3
 
     print("Put in the Test Number to start with:")
+    #print("Put in the Test Number to start with".encode(sys.stdout.encoding, errors='replace'))
     testNumber = int(input())
     imgStrings = np.array([ "IMG_01002DOKR5B_c", \
                             "IMG_01002DOKS32_c", \
@@ -93,7 +94,7 @@ if __name__ == "__main__":
     rgbColorList = np.array([   [  0,    0,    0], \
                                 [102,    0,    0], \
                                 [102,  102,    0], \
-                                [ 76,  153,    0], \
+                              #  [ 76,  153,    0], \
                                 [255,  255,  255]], \
                                 dtype=np.uint8)
 
@@ -170,13 +171,14 @@ if __name__ == "__main__":
             plt.tight_layout()
             plt.savefig(imgStrings[j] + "-" + "SEG_Plot-" + str(n) + "-" + timeString + "-" + de_param_string + ".jpg", dpi=200)# + "-" + "No_" + str(x) + ".jpg", dpi=200)
             #plt.show(block=False)
+            plt.close(plotFigure)
 
             newImages[n] = cv2.cvtColor(newImages[n], cv2.COLOR_RGB2BGR)
             #seg.ShowImage(newImages[n])
             seg.SaveImage(newImages[n], segImgFileName)
             seg_image = Image.open(segImgFileName)
             ocrEndResult = seg.Tesseract_ReadTextFromImage(seg_image)
-            csv_writer.writerow([j+testNumber, imgStrings[j], str(n), K, G, str(F).replace(".", ","), str(Cr).replace(".", ","), ocrEndResult])
+            csv_writer.writerow([j+testNumber, imgStrings[j], str(n), K, G, str(F).replace(".", ","), str(Cr).replace(".", ","), ocrEndResult.encode(sys.stdout.encoding, errors='replace')])
         #bestMember, sumHistory = de_OF2.DE_GetBestParameters()
         #centers = np.sort(bestMember[0])
         #segments = obf.OF2_GetSegments(centers, images[j])
