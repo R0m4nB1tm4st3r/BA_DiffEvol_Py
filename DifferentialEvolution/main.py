@@ -40,19 +40,17 @@ def InitializePopulation(Np, paramNum):
 #######################################--Main--##############################################################################
 #############################################################################################################################
 if __name__ == "__main__":
+    ############################################################################################################
+    ############################################################################################################
     # F: 0.25, 0.5, 0.25, 0.8
     # Cr: 0.8, 0.9, 0.1, 1.0
     F = 0.5
     Cr = 0.9
     o = 1.5
-    K = 4
-    G = 5000
+    K = 5
+    G = 500
     populationSize_OF2 = 5*K
     numOfImgs = 17
-
-    print("Put in the Test Number to start with:")
-    #print("Put in the Test Number to start with".encode(sys.stdout.encoding, errors='replace'))
-    testNumber = int(input())
     imgStrings = np.array([ "IMG_01002DOKR5B_c", \
                             "IMG_01002DOKS32_c", \
                             "IMG_01002DOKTAT_c", \
@@ -75,28 +73,31 @@ if __name__ == "__main__":
                             #"IMG_1349_0ZTTM0TUN3H_c", \
                             #"IMG_1555_7D91CX6GNPA_c" \
                             ])
+
     images = np.array(list((seg.GetImage(imgStrings[i] + ".jpg", cv2.IMREAD_GRAYSCALE) for i in range(numOfImgs))))
-    #images = np.array(list((cv2.fastNlMeansDenoising(seg.GetImage(imgStrings[i] + ".jpg", cv2.IMREAD_GRAYSCALE), None, 20, 7, 21) for i in range(numOfImgs))))
-
-    #laplacian = cv2.Laplacian(images[0],cv2.CV_8U)
-    #sobelx = cv2.Sobel(images[0],cv2.CV_8U,2,0,ksize=3)
-    #sobely = cv2.Sobel(images[0],cv2.CV_8U,0,2,ksize=3)
-    #sobelxy = cv2.Sobel(images[0],cv2.CV_8U,4,4,ksize=5)
-
-    #seg.ShowImage(laplacian)
-    #seg.ShowImage(sobelx)
-    #seg.ShowImage(sobely)
-    #seg.ShowImage(sobelxy)
-
+    #images = np.array(list((cv2.fastNlMeansDenoising(images, None, 20, 7, 21) for i in range(numOfImgs))))
     graylevels = np.arange(256)
 
     # black, red, yellow, green, white
     rgbColorList = np.array([   [  0,    0,    0], \
                                 [102,    0,    0], \
                                 [102,  102,    0], \
-                              #  [ 76,  153,    0], \
+                                [ 76,  153,    0], \
                                 [255,  255,  255]], \
                                 dtype=np.uint8)
+
+    t_min = np.array([])
+    t_max = np.array([])
+    t_min = np.append(t_min, [list(repeat(0., K)), list(repeat(0., K)), list(repeat(0., K))]) 
+    t_max = np.append(t_max, [list(repeat(1., K)), list(repeat(255., K)), list(repeat(7., K))]) 
+    #minBounds_OF2 = np.array(list(repeat(0., K)))
+    #maxBounds_OF2 = np.array(list(repeat(255., K)))
+
+    de_param_string = "G_" + str(G) + "-" + "K_" + str(K) + "-" + "F_" + str(F) + "-" + "Cr_" + str(Cr)
+    ############################################################################################################
+    ############################################################################################################
+    print("Put in the Test Number to start with:")
+    testNumber = int(input())
 
     currentDate = time.strftime("%d/%m/%Y").replace("/", "_")
     de_test_csv = open("de_test" + currentDate + ".csv", mode = "a")
@@ -107,15 +108,8 @@ if __name__ == "__main__":
     if os.stat(de_test_csv.name).st_size == 0:
         csv_writer.writerow(["Test Number", "Image Name", "Threshold Combination", "Number of Classes K", "Number of Iterations G", "Mutation Factor F", "Crossover Rate Cr", "Tesseract Read Result"])
 
-    t_min = np.array([])
-    t_max = np.array([])
-    t_min = np.append(t_min, [list(repeat(0., K)), list(repeat(0., K)), list(repeat(0., K))]) 
-    t_max = np.append(t_max, [list(repeat(1., K)), list(repeat(255., K)), list(repeat(7., K))]) 
-    minBounds_OF2 = np.array(list(repeat(0., K)))
-    maxBounds_OF2 = np.array(list(repeat(255., K)))
-
-    de_param_string = "G_" + str(G) + "-" + "K_" + str(K) + "-" + "F_" + str(F) + "-" + "Cr_" + str(Cr)
-
+    ############################################################################################################
+    ############################################################################################################
     for j in range(numOfImgs):
         print("Optimizing...")
         np.random.seed(123)
@@ -147,7 +141,7 @@ if __name__ == "__main__":
 
         for n in range(newImages.shape[0]):
 
-            segImgFileName = imgStrings[j] + "-" + "SEG_Test-" + str(n) + "-" + timeString + "-" + de_param_string + ".jpg" #+ "-" + "No_" + str(x) + ".jpg"
+            segImgFileName = imgStrings[j] + "-" + "SEG_Test-" + str(n) + "-" + de_param_string + ".jpg" #+ "-" + "No_" + str(x) + ".jpg"
             ocrEndResult = ""
 
             # plot the DE and Segmentation results #
@@ -169,7 +163,7 @@ if __name__ == "__main__":
             plotAxes[1] = plt.imshow(newImages[n], cmap='gray')
             plotAxes[1].axes.set_title("Result of Image Segmentation")
             plt.tight_layout()
-            plt.savefig(imgStrings[j] + "-" + "SEG_Plot-" + str(n) + "-" + timeString + "-" + de_param_string + ".jpg", dpi=200)# + "-" + "No_" + str(x) + ".jpg", dpi=200)
+            plt.savefig(imgStrings[j] + "-" + "SEG_Plot-" + str(n) + "-" + de_param_string + ".jpg", dpi=200)
             #plt.show(block=False)
             plt.close(plotFigure)
 
@@ -179,16 +173,6 @@ if __name__ == "__main__":
             seg_image = Image.open(segImgFileName)
             ocrEndResult = seg.Tesseract_ReadTextFromImage(seg_image)
             csv_writer.writerow([j+testNumber, imgStrings[j], str(n), K, G, str(F).replace(".", ","), str(Cr).replace(".", ","), ocrEndResult.encode(sys.stdout.encoding, errors='replace')])
-        #bestMember, sumHistory = de_OF2.DE_GetBestParameters()
-        #centers = np.sort(bestMember[0])
-        #segments = obf.OF2_GetSegments(centers, images[j])
-        #newImage = obf.OF2_DoImageSegmentation(segments, images[j], rgbColorList)
-        #seg.ShowImage(newImage)
-
-        #currentTime = time.strftime("%H:%M:%S").replace(":", "_")
-        #timeString = currentDate + "-" + currentTime
-        #segImgFileName = imgStrings[j] + "-" + "SEG_Test-" + timeString + "-" + de_param_string + ".jpg" #+ "-" + "No_" + str(x) + ".jpg"
-        #ocrEndResult = ""
 
         # plot the Fitness values #
         valHistFigure, valHistAxes = plot.CreateSubplotGrid(1, 1, False)
@@ -196,38 +180,7 @@ if __name__ == "__main__":
         valHistAxes.set_xlabel("Iteration Number")
         valHistAxes.set_ylabel("Mean Square Error")
         valHistAxes.set_title("Mean Square Error History through iterations of DE")# run " + str(x))
-        plt.savefig(imgStrings[j] + "-" + "objFuncHist-" + timeString + "-" + de_param_string + ".jpg", dpi=200) #"-" + "No_" + str(x) + ".jpg", dpi=200)
+        plt.savefig(imgStrings[j] + "-" + "objFuncHist-" + de_param_string + ".jpg", dpi=200) #"-" + "No_" + str(x) + ".jpg", dpi=200)
         #plt.show(block=False)
-
-        # plot the DE and Segmentation results #
-        #plotFigure, plotAxes = plot.CreateSubplotGrid(2, 1, False)
-        #plotFigure.set_dpi(200)
-        #plotAxes[0].plot(graylevels, h)
-        #plotAxes[0].plot(graylevels, obf.OF1_SumOfGauss(bestMember, K, graylevels))
-        #plotAxes[0].legend(("Histogram of the original Image", "Gaussian Approximation of the Histogram", ))
-        #plotAxes[0].legend(("Histogram of the original Image", ))
-        #plotAxes[0].vlines(thresholdValues, 0, np.amax(h), label="Threshold Values")
-        #plotAxes[0].vlines(centers[0], 0, np.amax(h), label="Cluster Centers")
-        #for k in range(thresholdValues.size):
-        #    plotAxes[0].annotate("T" + str(k+1), xy=(thresholdValues[k], np.amax(h)), )
-        #for k in range(K):
-            #plotAxes[0].annotate("c" + str(k+1), xy=(centers[k], np.amax(centers)), )
-        #plotAxes[0].set_xlabel("Graylevel g")
-        #plotAxes[0].set_ylabel("n_Pixel_relative")
-        #plotAxes[0].set_title("Mean Square Error: " + str(bestParams[1]))
-        #plotAxes[1] = plt.imshow(newImage, cmap='gray')
-        #plotAxes[1].axes.set_title("Result of Image Segmentation")
-        #plt.tight_layout()
-        #plt.savefig(imgStrings[j] + "-" + "SEG_Plot-" + timeString + "-" + de_param_string + ".jpg", dpi=200)# + "-" + "No_" + str(x) + ".jpg", dpi=200)
-        #plt.show(block=False)
-
-        # convert segmentated image to another color system and save #
-       # newImage = cv2.cvtColor(newImage, cv2.COLOR_RGB2BGR)
-        #seg.SaveImage(newImage, segImgFileName)
-        #seg_image = Image.open(segImgFileName)
-
-        # try to read text from segmented image with Tesseract #
-       # ocrEndResult = seg.Tesseract_ReadTextFromImage(seg_image)
-
-        # write the results into csv file #
-        #csv_writer.writerow([j+testNumber, imgStrings[j], currentTime.replace("_", ":"), K, G, str(F).replace(".", ","), str(Cr).replace(".", ","), ocrEndResult])
+    ############################################################################################################
+    ############################################################################################################
