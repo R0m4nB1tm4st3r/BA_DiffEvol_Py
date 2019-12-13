@@ -111,11 +111,11 @@ def PlotExample_3D_2():
 
     plt.show()
 ##########################################################################################################################
-def SurfacePlot3D(X, Y, Z):
+def LinePlot3D(X, Y, Z):
     fig = plt.figure()
     ax = fig.gca(projection='3d')
 
-    # Plot the surface.
+    # Plot the line.
     surf = ax.plot(X, Y, Z)
 
     plt.show()

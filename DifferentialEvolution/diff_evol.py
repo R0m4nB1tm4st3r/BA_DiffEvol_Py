@@ -129,7 +129,7 @@ class DE_Handler(object):
         print(time.time()-t0)
         best, currentValues = self.EvaluatePopulation()
         if best[0].size == 2:
-            plot.SurfacePlot3D(self.x, self.y, self.z)
+            plot.LinePlot3D(self.x, self.y, self.z)
         return best, bestValueHistory
 
 

@@ -48,9 +48,10 @@ if __name__ == "__main__":
     Cr = 0.9
     o = 1.5
     K = 2
-    G = 5
+    G = 10
     populationSize_OF2 = 5*K
     numOfImgs = 17
+    objFunc = 2
     imgStrings = np.array([ "IMG_01002DOKR5B_c", \
                             "IMG_01002DOKS32_c", \
                             "IMG_01002DOKTAT_c", \
@@ -88,12 +89,14 @@ if __name__ == "__main__":
                                 [255,  255,  255]], \
                                 dtype=np.uint8)
 
-    #t_min = np.array([])
-    #t_max = np.array([])
-    #t_min = np.append(t_min, [list(repeat(0., K)), list(repeat(0., K)), list(repeat(0., K))]) 
-    #t_max = np.append(t_max, [list(repeat(1., K)), list(repeat(255., K)), list(repeat(7., K))]) 
-    minBounds_OF2 = np.array(list(repeat(0., K)))
-    maxBounds_OF2 = np.array(list(repeat(255., K)))
+    if objFunc == 1:
+        t_min = np.array([])
+        t_max = np.array([])
+        t_min = np.append(t_min, [list(repeat(0., K)), list(repeat(0., K)), list(repeat(0., K))]) 
+        t_max = np.append(t_max, [list(repeat(1., K)), list(repeat(255., K)), list(repeat(7., K))]) 
+    elif objFunc == 2:
+        minBounds_OF2 = np.array(list(repeat(0., K)))
+        maxBounds_OF2 = np.array(list(repeat(255., K)))
 
     de_param_string = "G_" + str(G) + "-" + "K_" + str(K) + "-" + "F_" + str(F) + "-" + "Cr_" + str(Cr)
     ############################################################################################################
@@ -101,15 +104,17 @@ if __name__ == "__main__":
     print("Put in the Test Number to start with:")
     testNumber = int(input())
 
-    currentDate = time.strftime("%d/%m/%Y").replace("/", "_")
-    de_test_csv = open("de_test" + currentDate + ".csv", mode = "a")
+    currentDate = time.strftime("%Y/%m/%d").replace("/", "_")
+    de_test_csv = open("de_test_OF" + str(objFunc) + "-" + currentDate + ".csv", mode = "a")
     csv_writer = csv.writer(de_test_csv, \
         delimiter=';', \
         quoting=csv.QUOTE_MINIMAL)
 
     if os.stat(de_test_csv.name).st_size == 0:
-        csv_writer.writerow(["Test Number", "Image Name", "Threshold Combination", "Number of Classes K", "Number of Iterations G", "Mutation Factor F", "Crossover Rate Cr", "Tesseract Read Result"])
-
+        if objFunc == 1:
+            csv_writer.writerow(["Test Number", "Image Name", "Threshold Combination", "Number of Classes K", "Number of Iterations G", "Mutation Factor F", "Crossover Rate Cr", "Tesseract Read Result"])
+        elif objFunc == 2:
+            csv_writer.writerow(["Test Number", "Image Name", "Number of Classes K", "Number of Iterations G", "Mutation Factor F", "Crossover Rate Cr", "Tesseract Read Result"])
     ############################################################################################################
     ############################################################################################################
     for j in range(numOfImgs):
@@ -119,70 +124,100 @@ if __name__ == "__main__":
         # Initialize needed parameters for DE #
         h = obf.OF1_CalculateNormalizedHistogram(images[j])
         
-        #test_population = InitializePopulation(3*10*K, 3*K)
-        #objArgs = (K, graylevels, h, o)
-        testPopulation_OF2 = InitializePopulation(populationSize_OF2, K)
-        objArgs_OF2 = (images[j],)
+        if objFunc == 1:
+            test_population = InitializePopulation(3*10*K, 3*K)
+            objArgs = (K, graylevels, h, o)
+            deHandler = de.DE_Handler(F, Cr, G, 3*10*K, test_population, obf.OF1_CalcErrorEstimation, True, t_min, t_max, objArgs)
 
-        # Execute DE and do Segmentation of the current image #
-        #de_handle = de.DE_Handler(F, Cr, G, 3*10*K, test_population, obf.OF1_CalcErrorEstimation, True, t_min, t_max, objArgs)
-        de_OF2 = de.DE_Handler(F, Cr, G, populationSize_OF2, testPopulation_OF2, obf.OF2_Calc_InterClusterDistance, True, minBounds_OF2, maxBounds_OF2, objArgs_OF2)
+            bestParams, bestValueHistory = de_handle.DE_GetBestParameters()
+            bestMember = bestParams[0]
+            thresholdValues = obf.OF1_CalculateThresholdValues(bestMember, K)
+            thresholdCombinations = np.array(list(product(*thresholdValues)))
+            newImages = np.array([obf.OF1_DoImageSegmentation(images[j], thresholdCombinations[t], K, rgbColorList) \
+                for t in range(thresholdCombinations.shape[0]) \
+                if np.amin(thresholdCombinations[t]) != -1 \
+                ])
+            thresholdindices = np.array([i for i in range(thresholdCombinations.shape[0]) if np.amin(thresholdCombinations[i] != -1)])
+
+            timeString = currentDate
+
+            for n in range(newImages.shape[0]):
+                segImgFileName = imgStrings[j] + "-" + "SEG_Test-" + str(n) + "-" + de_param_string + ".jpg" #+ "-" + "No_" + str(x) + ".jpg"
+                ocrEndResult = ""
+
+                # plot the DE and Segmentation results #
+                plotFigure, plotAxes = plot.CreateSubplotGrid(2, 1, False)
+                plotFigure.set_dpi(200)
+                plotAxes[0].plot(graylevels, h)
+                plotAxes[0].plot(graylevels, obf.OF1_SumOfGauss(bestMember, K, graylevels))
+                plotAxes[0].legend(("Histogram of the original Image", "Gaussian Approximation of the Histogram", ))
+                plotAxes[0].vlines(thresholdCombinations[thresholdindices[n]], 0, np.amax(h), label="Threshold Values")
+                for k in range(thresholdCombinations[thresholdindices[n]].size):
+                    plotAxes[0].annotate("T" + str(k+1), xy=(thresholdCombinations[thresholdindices[n], k], np.amax(h)), )
+                
+                plotAxes[0].set_xlabel("Graylevel g")
+                plotAxes[0].set_ylabel("n_Pixel_relative")
+                plotAxes[0].set_title("Mean Square Error: " + str(bestParams[1]))
+                plotAxes[1] = plt.imshow(newImages[n], cmap='gray')
+                plotAxes[1].axes.set_title("Result of Image Segmentation")
+                plt.tight_layout()
+                plt.savefig(imgStrings[j] + "-" + "SEG_Plot-" + str(n) + "-" + de_param_string + ".jpg", dpi=200)
+                #plt.show(block=False)
+                plt.close(plotFigure)
+
+                newImages[n] = cv2.cvtColor(newImages[n], cv2.COLOR_RGB2BGR)
+                seg.SaveImage(newImages[n], segImgFileName)
+                seg_image = Image.open(segImgFileName)
+                ocrEndResult = seg.Tesseract_ReadTextFromImage(seg_image)
+
+                csv_writer.writerow([j+testNumber, imgStrings[j], str(n), K, G, str(F).replace(".", ","), str(Cr).replace(".", ","), ocrEndResult.encode(sys.stdout.encoding, errors='replace')])
+        elif objFunc == 2:
+            testPopulation_OF2 = InitializePopulation(populationSize_OF2, K)
+            objArgs_OF2 = (images[j],)
+            deHandler = de.DE_Handler(F, Cr, G, populationSize_OF2, testPopulation_OF2, obf.OF2_Calc_InterClusterDistance, True, minBounds_OF2, maxBounds_OF2, objArgs_OF2)
+            
+            centers, bestValueHistory = deHandler.DE_GetBestParameters()
+
+            segments = obf.OF2_GetSegments(centers[0], images[j])
+            newImage = obf.OF2_DoImageSegmentation(segments, images[j], rgbColorList)
         
-        centers, sumHistory = de_OF2.DE_GetBestParameters()
-        #bestParams, bestValueHistory = de_handle.DE_GetBestParameters()
-        #bestMember = bestParams[0]
-        #thresholdValues = obf.OF1_CalculateThresholdValues(bestMember, K)
-        #thresholdCombinations = np.array(list(product(*thresholdValues)))
-        #newImages = np.array([obf.OF1_DoImageSegmentation(images[j], thresholdCombinations[t], K, rgbColorList) \
-            #for t in range(thresholdCombinations.shape[0]) \
-            #if np.amin(thresholdCombinations[t]) != -1 \
-            #])
-        #thresholdindices = np.array([i for i in range(thresholdCombinations.shape[0]) if np.amin(thresholdCombinations[i] != -1)])
-
-        timeString = currentDate
-
-        for n in range(newImages.shape[0]):
-
-            segImgFileName = imgStrings[j] + "-" + "SEG_Test-" + str(n) + "-" + de_param_string + ".jpg" #+ "-" + "No_" + str(x) + ".jpg"
+            timeString = currentDate
+            segImgFileName = imgStrings[j] + "-" + "SEG_Test-" + de_param_string + ".jpg"
             ocrEndResult = ""
 
             # plot the DE and Segmentation results #
             plotFigure, plotAxes = plot.CreateSubplotGrid(2, 1, False)
             plotFigure.set_dpi(200)
             plotAxes[0].plot(graylevels, h)
-            plotAxes[0].plot(graylevels, obf.OF1_SumOfGauss(bestMember, K, graylevels))
-            plotAxes[0].legend(("Histogram of the original Image", "Gaussian Approximation of the Histogram", ))
-            #plotAxes[0].legend(("Histogram of the original Image", ))
-            plotAxes[0].vlines(thresholdCombinations[thresholdindices[n]], 0, np.amax(h), label="Threshold Values")
-            #plotAxes[0].vlines(centers[0], 0, np.amax(h), label="Cluster Centers")
-            for k in range(thresholdCombinations[thresholdindices[n]].size):
-                plotAxes[0].annotate("T" + str(k+1), xy=(thresholdCombinations[thresholdindices[n], k], np.amax(h)), )
-            #for k in range(K):
-                #plotAxes[0].annotate("c" + str(k+1), xy=(centers[k], np.amax(h)), )
+            plotAxes[0].legend(("Histogram of the original Image", ))
+            plotAxes[0].vlines(centers[0], 0, np.amax(h), label="Cluster Centers")
+            for k in range(K):
+                plotAxes[0].annotate("c" + str(k+1), xy=(centers[0][k], np.amax(h)), )
             plotAxes[0].set_xlabel("Graylevel g")
             plotAxes[0].set_ylabel("n_Pixel_relative")
-            plotAxes[0].set_title("Mean Square Error: " + str(bestParams[1]))
-            plotAxes[1] = plt.imshow(newImages[n], cmap='gray')
+            plotAxes[0].set_title("Cluster Distance Sum: " + str(centers[1]))
+            plotAxes[1] = plt.imshow(newImage, cmap='gray')
             plotAxes[1].axes.set_title("Result of Image Segmentation")
             plt.tight_layout()
-            plt.savefig(imgStrings[j] + "-" + "SEG_Plot-" + str(n) + "-" + de_param_string + ".jpg", dpi=200)
-            #plt.show(block=False)
+            plt.savefig(imgStrings[j] + "-" + "SEG_Plot-" + de_param_string + ".jpg", dpi=200)
             plt.close(plotFigure)
 
-            newImages[n] = cv2.cvtColor(newImages[n], cv2.COLOR_RGB2BGR)
-            #seg.ShowImage(newImages[n])
-            seg.SaveImage(newImages[n], segImgFileName)
+            newImage = cv2.cvtColor(newImage, cv2.COLOR_RGB2BGR)
+            seg.SaveImage(newImage, segImgFileName)
             seg_image = Image.open(segImgFileName)
             ocrEndResult = seg.Tesseract_ReadTextFromImage(seg_image)
-            csv_writer.writerow([j+testNumber, imgStrings[j], str(n), K, G, str(F).replace(".", ","), str(Cr).replace(".", ","), ocrEndResult.encode(sys.stdout.encoding, errors='replace')])
+
+            csv_writer.writerow([j+testNumber, imgStrings[j], K, G, str(F).replace(".", ","), str(Cr).replace(".", ","), ocrEndResult.encode(sys.stdout.encoding, errors='replace')])
+        
 
         # plot the Fitness values #
         valHistFigure, valHistAxes = plot.CreateSubplotGrid(1, 1, False)
         valHistAxes.plot(range(1, G+1), bestValueHistory)
         valHistAxes.set_xlabel("Iteration Number")
-        valHistAxes.set_ylabel("Mean Square Error")
-        valHistAxes.set_title("Mean Square Error History through iterations of DE")# run " + str(x))
+        valHistAxes.set_ylabel("Fitness Value")
+        valHistAxes.set_title("Fitness Value History through iterations of DE")# run " + str(x))
         plt.savefig(imgStrings[j] + "-" + "objFuncHist-" + de_param_string + ".jpg", dpi=200) #"-" + "No_" + str(x) + ".jpg", dpi=200)
+        plt.close(valHistFigure)
         #plt.show(block=False)
     ############################################################################################################
     ############################################################################################################
