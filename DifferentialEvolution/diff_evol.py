@@ -4,6 +4,7 @@
 import numpy as np
 import random as rand
 import time
+import plot
 
 #############################################################################################################################
 #####################################--Class Declarations--##################################################################
@@ -36,6 +37,11 @@ class DE_Handler(object):
         self.population = np.array([self.minBounds + population[p] * (self.maxBounds - self.minBounds) for p in range(self.Np)])
         self.objArgs = objArgs
 
+        self.x = np.arange(self.G + 1, dtype=np.float_)
+        self.y = np.arange(self.G + 1, dtype=np.float_)
+        self.z = np.arange(self.G + 1, dtype=np.float_)
+        self.genIndex = 0
+
         rand.seed(789)
         np.random.seed(456)
 #############################################################################################################################
@@ -43,16 +49,19 @@ class DE_Handler(object):
         """ Finds the member of the current population that yields the best value for the Objective Function
         (doesn't need to be called externally)
         """
-        #denormalization = lambda p : self.minBounds + p * (self.maxBounds - self.minBounds)
-        #denormPopulation = np.array(list(map(denormalization, self.population)))
 
-        #values = np.array(list((self.ObjectiveFunction(self.minBounds + self.population[p] * (self.maxBounds - self.minBounds), *self.objArgs) for p in range(self.Np))))
         values = np.array(list((self.ObjectiveFunction(self.population[p], *self.objArgs) for p in range(self.Np))))
 
         if self.minimizeFlag == True:
             best = (self.population[np.argmin(values)], np.amin(values))
         else:
             best = (self.population[np.argmax(values)], np.amax(values))
+
+        if best[0].size == 2:
+            self.x[self.genIndex] = best[0][0]
+            self.y[self.genIndex] = best[0][1]
+            self.z[self.genIndex] = best[1]
+            self.genIndex = self.genIndex + 1
 
         return best, values
 #############################################################################################################################
@@ -96,7 +105,7 @@ class DE_Handler(object):
         #valueU = self.ObjectiveFunction(self.minBounds + u * (self.maxBounds - self.minBounds), *self.objArgs)
         valueU = self.ObjectiveFunction(u, *self.objArgs)
 
-        if (valueU <= value and self.minimizeFlag == True) or (valueU >= value and self.minimizeFlag == False):
+        if (valueU < value and self.minimizeFlag == True) or (valueU > value and self.minimizeFlag == False):
             return u
         else:
             return p
@@ -119,6 +128,8 @@ class DE_Handler(object):
         bestValueHistory = np.array(list((self.DE_Optimization() for _ in range(self.G))))
         print(time.time()-t0)
         best, currentValues = self.EvaluatePopulation()
+        if best[0].size == 2:
+            plot.SurfacePlot3D(self.x, self.y, self.z)
         return best, bestValueHistory
 
 

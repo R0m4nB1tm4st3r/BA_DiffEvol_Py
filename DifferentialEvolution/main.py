@@ -47,8 +47,8 @@ if __name__ == "__main__":
     F = 0.5
     Cr = 0.9
     o = 1.5
-    K = 5
-    G = 500
+    K = 2
+    G = 5
     populationSize_OF2 = 5*K
     numOfImgs = 17
     imgStrings = np.array([ "IMG_01002DOKR5B_c", \
@@ -74,24 +74,26 @@ if __name__ == "__main__":
                             #"IMG_1555_7D91CX6GNPA_c" \
                             ])
 
+    #plot.PlotExample_3D_2()
+
     images = np.array(list((seg.GetImage(imgStrings[i] + ".jpg", cv2.IMREAD_GRAYSCALE) for i in range(numOfImgs))))
     #images = np.array(list((cv2.fastNlMeansDenoising(images, None, 20, 7, 21) for i in range(numOfImgs))))
     graylevels = np.arange(256)
 
     # black, red, yellow, green, white
     rgbColorList = np.array([   [  0,    0,    0], \
-                                [102,    0,    0], \
-                                [102,  102,    0], \
-                                [ 76,  153,    0], \
+                               # [102,    0,    0], \
+                               # [102,  102,    0], \
+                               # [ 76,  153,    0], \
                                 [255,  255,  255]], \
                                 dtype=np.uint8)
 
-    t_min = np.array([])
-    t_max = np.array([])
-    t_min = np.append(t_min, [list(repeat(0., K)), list(repeat(0., K)), list(repeat(0., K))]) 
-    t_max = np.append(t_max, [list(repeat(1., K)), list(repeat(255., K)), list(repeat(7., K))]) 
-    #minBounds_OF2 = np.array(list(repeat(0., K)))
-    #maxBounds_OF2 = np.array(list(repeat(255., K)))
+    #t_min = np.array([])
+    #t_max = np.array([])
+    #t_min = np.append(t_min, [list(repeat(0., K)), list(repeat(0., K)), list(repeat(0., K))]) 
+    #t_max = np.append(t_max, [list(repeat(1., K)), list(repeat(255., K)), list(repeat(7., K))]) 
+    minBounds_OF2 = np.array(list(repeat(0., K)))
+    maxBounds_OF2 = np.array(list(repeat(255., K)))
 
     de_param_string = "G_" + str(G) + "-" + "K_" + str(K) + "-" + "F_" + str(F) + "-" + "Cr_" + str(Cr)
     ############################################################################################################
@@ -117,25 +119,25 @@ if __name__ == "__main__":
         # Initialize needed parameters for DE #
         h = obf.OF1_CalculateNormalizedHistogram(images[j])
         
-        test_population = InitializePopulation(3*10*K, 3*K)
-        objArgs = (K, graylevels, h, o)
-        #testPopulation_OF2 = InitializePopulation(populationSize, K)
-        #objArgs_OF2 = (images[j],)
+        #test_population = InitializePopulation(3*10*K, 3*K)
+        #objArgs = (K, graylevels, h, o)
+        testPopulation_OF2 = InitializePopulation(populationSize_OF2, K)
+        objArgs_OF2 = (images[j],)
 
         # Execute DE and do Segmentation of the current image #
-        de_handle = de.DE_Handler(F, Cr, G, 3*10*K, test_population, obf.OF1_CalcErrorEstimation, True, t_min, t_max, objArgs)
-        #de_OF2 = de.DE_Handler(F, Cr, G, populationSize, testPopulation_OF2, obf.OF2_Calc_InterClusterDistance, True, minBounds_OF2, maxBounds_OF2, objArgs_OF2)
+        #de_handle = de.DE_Handler(F, Cr, G, 3*10*K, test_population, obf.OF1_CalcErrorEstimation, True, t_min, t_max, objArgs)
+        de_OF2 = de.DE_Handler(F, Cr, G, populationSize_OF2, testPopulation_OF2, obf.OF2_Calc_InterClusterDistance, True, minBounds_OF2, maxBounds_OF2, objArgs_OF2)
         
-        bestParams, bestValueHistory = de_handle.DE_GetBestParameters()
-        bestMember = bestParams[0]
-        thresholdValues = obf.OF1_CalculateThresholdValues(bestMember, K)
-        thresholdCombinations = np.array(list(product(*thresholdValues)))
-        #newImage = obf.OF1_DoImageSegmentation(images[j], thresholdValues, K, rgbColorList)
-        newImages = np.array([obf.OF1_DoImageSegmentation(images[j], thresholdCombinations[t], K, rgbColorList) \
-            for t in range(thresholdCombinations.shape[0]) \
-            if np.amin(thresholdCombinations[t]) != -1 \
-            ])
-        thresholdindices = np.array([i for i in range(thresholdCombinations.shape[0]) if np.amin(thresholdCombinations[i] != -1)])
+        centers, sumHistory = de_OF2.DE_GetBestParameters()
+        #bestParams, bestValueHistory = de_handle.DE_GetBestParameters()
+        #bestMember = bestParams[0]
+        #thresholdValues = obf.OF1_CalculateThresholdValues(bestMember, K)
+        #thresholdCombinations = np.array(list(product(*thresholdValues)))
+        #newImages = np.array([obf.OF1_DoImageSegmentation(images[j], thresholdCombinations[t], K, rgbColorList) \
+            #for t in range(thresholdCombinations.shape[0]) \
+            #if np.amin(thresholdCombinations[t]) != -1 \
+            #])
+        #thresholdindices = np.array([i for i in range(thresholdCombinations.shape[0]) if np.amin(thresholdCombinations[i] != -1)])
 
         timeString = currentDate
 
@@ -156,7 +158,7 @@ if __name__ == "__main__":
             for k in range(thresholdCombinations[thresholdindices[n]].size):
                 plotAxes[0].annotate("T" + str(k+1), xy=(thresholdCombinations[thresholdindices[n], k], np.amax(h)), )
             #for k in range(K):
-                #plotAxes[0].annotate("c" + str(k+1), xy=(centers[k], np.amax(centers)), )
+                #plotAxes[0].annotate("c" + str(k+1), xy=(centers[k], np.amax(h)), )
             plotAxes[0].set_xlabel("Graylevel g")
             plotAxes[0].set_ylabel("n_Pixel_relative")
             plotAxes[0].set_title("Mean Square Error: " + str(bestParams[1]))
