@@ -6,6 +6,9 @@ import random as rand
 import time
 import plot
 
+from multiprocessing import Pool
+from itertools import repeat
+
 #############################################################################################################################
 #####################################--Class Declarations--##################################################################
 #############################################################################################################################
@@ -41,6 +44,7 @@ class DE_Handler(object):
         self.y = np.arange(self.G + 1, dtype=np.float_)
         self.z = np.arange(self.G + 1, dtype=np.float_)
         self.genIndex = 0
+        self.processPool = Pool(4)
 
         rand.seed(789)
         np.random.seed(456)
@@ -49,9 +53,11 @@ class DE_Handler(object):
         """ Finds the member of the current population that yields the best value for the Objective Function
         (doesn't need to be called externally)
         """
+        #t0 = time.time()
+        #values = np.array(list((self.ObjectiveFunction(self.population[p], *self.objArgs) for p in range(self.Np))))
 
-        values = np.array(list((self.ObjectiveFunction(self.population[p], *self.objArgs) for p in range(self.Np))))
-
+        values = np.array(self.processPool.starmap_async(self.ObjectiveFunction, zip(self.population, repeat(*self.objArgs, self.Np)), 1).get())
+        #print(time.time()-t0)
         if self.minimizeFlag == True:
             best = (self.population[np.argmin(values)], np.amin(values))
         else:
