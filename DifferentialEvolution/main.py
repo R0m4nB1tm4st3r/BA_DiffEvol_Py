@@ -48,7 +48,7 @@ if __name__ == "__main__":
     Cr = 0.9
     o = 1.5
     K = 2
-    G = 50
+    G = 100
     populationSize_OF2 = 5*K
     numOfImgs = 17
     objFunc = 2
