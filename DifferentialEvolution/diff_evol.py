@@ -101,21 +101,17 @@ class DE_Handler(object):
         - value: return value of the objective function for the current member
         """
 
-        
         r = rand.randint(0, v.size-1)
         L = 1
         while rand.random() <= self.Cr and L < v.size:
-        #while rand.random() <= Cr and L < v.size:
             L = L + 1
 
         u = np.array([v[(r+i)%v.size] if i < L else p[(r+i)%v.size] for i in range(v.size)])
 
         #valueU = self.ObjectiveFunction(self.minBounds + u * (self.maxBounds - self.minBounds), *self.objArgs)
         valueU = self.ObjectiveFunction(u, *self.objArgs)
-        #valueU = objFunc(u, *objArgs)
 
         if (valueU < value and self.minimizeFlag == True) or (valueU > value and self.minimizeFlag == False):
-        #if (valueU < value and minimizeFlag == True) or (valueU > value and minimizeFlag == False):
             return u
         else:
             return p
@@ -124,13 +120,11 @@ class DE_Handler(object):
         """ executes the whole optimization process of the DE-Algorithm
         (doesn't need to be called externally)
         """
-        t0 = time.time()
         best, currentValues = self.EvaluatePopulation()
         mutantVectors = np.array([self.GetMutantVector(n, best[0]) for n in range(self.Np)])
         #self.population = np.array([self.SelectVector(self.GetMutantVector(j, best[0]), self.population[j], currentValues[j]) for j in range(self.Np)])
         self.population = np.array(self.processPool.starmap_async(self.SelectVector, \
             zip(mutantVectors, np.copy(self.population), currentValues), 1).get())
-        print(time.time()-t0)
 
         return best[1]
 #############################################################################################################################

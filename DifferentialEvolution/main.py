@@ -48,9 +48,9 @@ if __name__ == "__main__":
     Cr = 0.9
     o = 1.5
     K = 2
-    G = 100
-    populationSize_OF2 = 5*K
-    numOfImgs = 17
+    G = 10
+    populationSize_OF2 = 10*K
+    numOfImgs = 15
     objFunc = 2
     imgStrings = np.array([ "IMG_01002DOKR5B_c", \
                             "IMG_01002DOKS32_c", \
@@ -67,8 +67,8 @@ if __name__ == "__main__":
                             "IMG_01002DOL6GN_c", \
                             "IMG_01002DOL55E_c", \
                             "IMG_01002DOL435_c", \
-                            "IMG_01002DOLBFF_c", \
-                            "IMG_01002DOLH01_c", \
+                            #"IMG_01002DOLBFF_c", \
+                            #"IMG_01002DOLH01_c", \
                             #"IMG_1255_DLXFFNICKLT_c", \
                             #"IMG_1324_DLXFFNICKLT_c", \
                             #"IMG_1349_0ZTTM0TUN3H_c", \
@@ -77,7 +77,7 @@ if __name__ == "__main__":
 
     #plot.PlotExample_3D_2()
 
-    images = np.array(list((seg.GetImage(imgStrings[i] + ".jpg", cv2.IMREAD_GRAYSCALE) for i in range(numOfImgs))))
+    images = np.array(list((seg.GetImage("SourceImages\\" + imgStrings[i] + ".jpg", cv2.IMREAD_GRAYSCALE) for i in range(numOfImgs))))
     #images = np.array(list((cv2.fastNlMeansDenoising(images, None, 20, 7, 21) for i in range(numOfImgs))))
     graylevels = np.arange(256)
 
@@ -105,7 +105,7 @@ if __name__ == "__main__":
     testNumber = int(input())
 
     currentDate = time.strftime("%Y/%m/%d").replace("/", "_")
-    de_test_csv = open("de_test_OF" + str(objFunc) + "-" + currentDate + ".csv", mode = "a")
+    de_test_csv = open("ResultsOF" + str(objFunc) + "\\" + "de_test_OF" + str(objFunc) + "-" + currentDate + ".csv", mode = "a")
     csv_writer = csv.writer(de_test_csv, \
         delimiter=';', \
         quoting=csv.QUOTE_MINIMAL)
@@ -142,7 +142,7 @@ if __name__ == "__main__":
             timeString = currentDate
 
             for n in range(newImages.shape[0]):
-                segImgFileName = imgStrings[j] + "-" + "SEG_Test-" + str(n) + "-" + de_param_string + ".jpg" #+ "-" + "No_" + str(x) + ".jpg"
+                segImgFileName = "ResultsOF" + str(objFunc) + "\\" + imgStrings[j] + "-" + "SEG_Test-" + str(n) + "-" + de_param_string + ".jpg"
                 ocrEndResult = ""
 
                 # plot the DE and Segmentation results #
@@ -161,7 +161,7 @@ if __name__ == "__main__":
                 plotAxes[1] = plt.imshow(newImages[n], cmap='gray')
                 plotAxes[1].axes.set_title("Result of Image Segmentation")
                 plt.tight_layout()
-                plt.savefig(imgStrings[j] + "-" + "SEG_Plot-" + str(n) + "-" + de_param_string + ".jpg", dpi=200)
+                plt.savefig("ResultsOF" + str(objFunc) + "\\" + imgStrings[j] + "-" + "SEG_Plot-" + str(n) + "-" + de_param_string + ".jpg", dpi=200)
                 #plt.show(block=False)
                 plt.close(plotFigure)
 
@@ -182,7 +182,7 @@ if __name__ == "__main__":
             newImage = obf.OF2_DoImageSegmentation(segments, images[j], rgbColorList)
         
             timeString = currentDate
-            segImgFileName = imgStrings[j] + "-" + "SEG_Test-" + de_param_string + ".jpg"
+            segImgFileName = "ResultsOF" + str(objFunc) + "\\" + imgStrings[j] + "-" + "SEG_Test-" + de_param_string + ".jpg"
             ocrEndResult = ""
 
             # plot the DE and Segmentation results #
@@ -199,7 +199,7 @@ if __name__ == "__main__":
             plotAxes[1] = plt.imshow(newImage, cmap='gray')
             plotAxes[1].axes.set_title("Result of Image Segmentation")
             plt.tight_layout()
-            plt.savefig(imgStrings[j] + "-" + "SEG_Plot-" + de_param_string + ".jpg", dpi=200)
+            plt.savefig("ResultsOF" + str(objFunc) + "\\" + imgStrings[j] + "-" + "SEG_Plot-" + de_param_string + ".jpg", dpi=200)
             plt.close(plotFigure)
 
             newImage = cv2.cvtColor(newImage, cv2.COLOR_RGB2BGR)
@@ -215,9 +215,8 @@ if __name__ == "__main__":
         valHistAxes.plot(range(1, G+1), bestValueHistory)
         valHistAxes.set_xlabel("Iteration Number")
         valHistAxes.set_ylabel("Fitness Value")
-        valHistAxes.set_title("Fitness Value History through iterations of DE")# run " + str(x))
-        plt.savefig(imgStrings[j] + "-" + "objFuncHist-" + de_param_string + ".jpg", dpi=200) #"-" + "No_" + str(x) + ".jpg", dpi=200)
+        valHistAxes.set_title("Fitness Value History through iterations of DE")
+        plt.savefig("ResultsOF" + str(objFunc) + "\\" + imgStrings[j] + "-" + "objFuncHist-" + de_param_string + ".jpg", dpi=200)
         plt.close(valHistFigure)
-        #plt.show(block=False)
     ############################################################################################################
     ############################################################################################################
