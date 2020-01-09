@@ -48,10 +48,10 @@ if __name__ == "__main__":
     Cr = 0.9
     o = 1.5
     K = 2
-    G = 10
+    G = 100
     populationSize_OF2 = 10*K
     numOfImgs = 15
-    objFunc = 2
+    objFunc = 1
     imgStrings = np.array([ "IMG_01002DOKR5B_c", \
                             "IMG_01002DOKS32_c", \
                             "IMG_01002DOKTAT_c", \
@@ -129,7 +129,7 @@ if __name__ == "__main__":
             objArgs = (K, graylevels, h, o)
             deHandler = de.DE_Handler(F, Cr, G, 3*10*K, test_population, obf.OF1_CalcErrorEstimation, True, t_min, t_max, objArgs)
 
-            bestParams, bestValueHistory = de_handle.DE_GetBestParameters()
+            bestParams, bestValueHistory = deHandler.DE_GetBestParameters()
             bestMember = bestParams[0]
             thresholdValues = obf.OF1_CalculateThresholdValues(bestMember, K)
             thresholdCombinations = np.array(list(product(*thresholdValues)))

@@ -44,16 +44,19 @@ def OF1_SumOfGauss(param_list, classNum, g_lvls):
         scale=param_list[i + classNum * 2]) \
         for i in range(classNum)])
 #############################################################################################################################
-def OF1_CalcErrorEstimation(param_list, classNum, g_lvls, histogram, o):
+#def OF1_CalcErrorEstimation(param_list, classNum, g_lvls, histogram, o):
+def OF1_CalcErrorEstimation(param_list, args):
     """
     calculate mean sqare error between histogram and gaussian approximation including penalty in case sum(Pi) != 1
 
     - param_list: list of gaussian parameters (P1, P2, ... Pk, my1, my2, ... myk, sigma1, sigma2, ... sigmak - k is the number of classes) 
     """
+    #return (sum( \
+        #( OF1_SumOfGauss(param_list, classNum, g_lvls) - histogram ) ** 2) / g_lvls.size) + \
+        #(abs(sum(param_list[:classNum]) - 1) * o)
     return (sum( \
-        ( OF1_SumOfGauss(param_list, classNum, g_lvls) - histogram ) ** 2) / g_lvls.size) + \
-        (abs(sum(param_list[:classNum]) - 1) * o)
-    #return result
+        ( OF1_SumOfGauss(param_list, args[0], args[1]) - args[2] ) ** 2) / args[1].size) + \
+        (abs(sum(param_list[:args[0]]) - 1) * args[3])
 #############################################################################################################################
 def OF1_CalculateThresholdValues(param_list, classNum):
     """

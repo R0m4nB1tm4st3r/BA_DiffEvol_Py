@@ -2,7 +2,6 @@
 #####################################--Imports--#############################################################################
 #############################################################################################################################
 import numpy as np
-import random as rand
 import time
 import plot
 
@@ -40,14 +39,13 @@ class DE_Handler(object):
         self.population = np.array([self.minBounds + population[p] * (self.maxBounds - self.minBounds) for p in range(self.Np)])
         self.objArgs = objArgs
 
-        self.x = np.arange(self.G + 1, dtype=np.float_)
-        self.y = np.arange(self.G + 1, dtype=np.float_)
-        self.z = np.arange(self.G + 1, dtype=np.float_)
-        self.genIndex = 0
-        self.processPool = Pool(4)
-
-        rand.seed(789)
         np.random.seed(456)
+
+        #self.x = np.arange(self.G + 1, dtype=np.float_)
+        #self.y = np.arange(self.G + 1, dtype=np.float_)
+        #self.z = np.arange(self.G + 1, dtype=np.float_)
+        #self.genIndex = 0
+        self.processPool = Pool(4)
 #############################################################################################################################
     def EvaluatePopulation(self):
         """ Finds the member of the current population that yields the best value for the Objective Function
@@ -56,18 +54,18 @@ class DE_Handler(object):
         #t0 = time.time()
         #values = np.array(list((self.ObjectiveFunction(self.population[p], *self.objArgs) for p in range(self.Np))))
 
-        values = np.array(self.processPool.starmap_async(self.ObjectiveFunction, zip(self.population, repeat(*self.objArgs, self.Np)), 1).get())
+        values = np.array(self.processPool.starmap_async(self.ObjectiveFunction, zip(self.population, repeat(self.objArgs, self.Np)), 1).get())
         #print(time.time()-t0)
         if self.minimizeFlag == True:
             best = (self.population[np.argmin(values)], np.amin(values))
         else:
             best = (self.population[np.argmax(values)], np.amax(values))
 
-        if best[0].size == 2:
-            self.x[self.genIndex] = best[0][0]
-            self.y[self.genIndex] = best[0][1]
-            self.z[self.genIndex] = best[1]
-            self.genIndex = self.genIndex + 1
+        #if best[0].size == 2:
+        #    self.x[self.genIndex] = best[0][0]
+        #    self.y[self.genIndex] = best[0][1]
+        #    self.z[self.genIndex] = best[1]
+        #    self.genIndex = self.genIndex + 1
 
         return best, values
 #############################################################################################################################
@@ -84,7 +82,7 @@ class DE_Handler(object):
 
         v = (bestParams + (self.population[randNumbers[0]] - self.population[randNumbers[1]]) * self.F)
         #v = np.select([v < 0, v > 1], [rand.random(), rand.random()], v)
-        v = np.array([rand.uniform(self.minBounds[i], self.maxBounds[i]) \
+        v = np.array([np.random.uniform(self.minBounds[i], self.maxBounds[i]) \
             if v[i] < self.minBounds[i] or v[i] > self.maxBounds[i] \
             else v[i] \
             for i in range(v.size)])
@@ -101,15 +99,17 @@ class DE_Handler(object):
         - value: return value of the objective function for the current member
         """
 
-        r = rand.randint(0, v.size-1)
+        #r = rand.randint(0, v.size-1)
+        r = np.random.randint(0, v.size-1)
         L = 1
-        while rand.random() <= self.Cr and L < v.size:
+        #while rand.random() <= self.Cr and L < v.size:
+        while np.random.uniform(0.0, 1.0) <= self.Cr and L < v.size:
             L = L + 1
 
         u = np.array([v[(r+i)%v.size] if i < L else p[(r+i)%v.size] for i in range(v.size)])
 
         #valueU = self.ObjectiveFunction(self.minBounds + u * (self.maxBounds - self.minBounds), *self.objArgs)
-        valueU = self.ObjectiveFunction(u, *self.objArgs)
+        valueU = self.ObjectiveFunction(u, self.objArgs)
 
         if (valueU < value and self.minimizeFlag == True) or (valueU > value and self.minimizeFlag == False):
             return u
@@ -120,11 +120,16 @@ class DE_Handler(object):
         """ executes the whole optimization process of the DE-Algorithm
         (doesn't need to be called externally)
         """
+
         best, currentValues = self.EvaluatePopulation()
         mutantVectors = np.array([self.GetMutantVector(n, best[0]) for n in range(self.Np)])
-        #self.population = np.array([self.SelectVector(self.GetMutantVector(j, best[0]), self.population[j], currentValues[j]) for j in range(self.Np)])
-        self.population = np.array(self.processPool.starmap_async(self.SelectVector, \
-            zip(mutantVectors, np.copy(self.population), currentValues), 1).get())
+        populationCopy = np.copy(self.population)
+        self.population = np.array([self.SelectVector(self.GetMutantVector(j, best[0]), populationCopy[j], currentValues[j]) for j in range(self.Np)])
+        #self.population = np.array(self.processPool.starmap_async(self.SelectVector, \
+         #   zip(mutantVectors, np.copy(self.population), currentValues), 1).get())
+        #self.population = np.array(self.processPool.starmap(self.SelectVector, \
+           # zip(mutantVectors, np.copy(self.population), currentValues), 1))
+        #self.population = np.array([self.processPool.apply_async(self.SelectVector, args=(mutantVectors[p], populationCopy[p], currentValues[p],)).get() for p in range(self.Np)])
 
         return best[1]
 #############################################################################################################################
@@ -144,5 +149,7 @@ class DE_Handler(object):
         self_dict = self.__dict__.copy()
         del self_dict['processPool']
         return self_dict
+#############################################################################################################################
+
 
 
