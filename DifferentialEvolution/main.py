@@ -40,44 +40,68 @@ def InitializePopulation(Np, paramNum):
 #######################################--Main--##############################################################################
 #############################################################################################################################
 if __name__ == "__main__":
-    ############################################################################################################
-    ############################################################################################################
+############################################################################################################
+############################################################################################################
     # F: 0.25, 0.5, 0.25, 0.8
     # Cr: 0.8, 0.9, 0.1, 1.0
     F = 0.5
     Cr = 0.9
     o = 1.5
     K = 2
-    G = 100
+    G = 2000
     populationSize_OF2 = 10*K
     numOfImgs = 15
     objFunc = 1
-    imgStrings = np.array([ "IMG_01002DOKR5B_c", \
-                            "IMG_01002DOKS32_c", \
-                            "IMG_01002DOKTAT_c", \
-                            "IMG_01002DOKUGK_c", \
-                            "IMG_01002DOKVX3_c", \
-                            "IMG_01002DOKXUC_c", \
-                            "IMG_01002DOKYIL_c", \
-                            "IMG_01002DOKZPU_c", \
-                            "IMG_01002DOL0UD_c", \
-                            "IMG_01002DOL1X4_c", \
-                            "IMG_01002DOL2PV_c", \
-                            "IMG_01002DOL3IM_c", \
-                            "IMG_01002DOL6GN_c", \
-                            "IMG_01002DOL55E_c", \
-                            "IMG_01002DOL435_c", \
-                            #"IMG_01002DOLBFF_c", \
-                            #"IMG_01002DOLH01_c", \
-                            #"IMG_1255_DLXFFNICKLT_c", \
-                            #"IMG_1324_DLXFFNICKLT_c", \
-                            #"IMG_1349_0ZTTM0TUN3H_c", \
-                            #"IMG_1555_7D91CX6GNPA_c" \
+    altImgsFlag = True
+    imgPathString = ""
+    resultsPathString = "ResultsOF" + str(objFunc)
+    
+    if altImgsFlag == False:
+        imgStrings = np.array([ "IMG_01002DOKR5B_c", \
+                                "IMG_01002DOKS32_c", \
+                                "IMG_01002DOKTAT_c", \
+                                "IMG_01002DOKUGK_c", \
+                                "IMG_01002DOKVX3_c", \
+                                "IMG_01002DOKXUC_c", \
+                                "IMG_01002DOKYIL_c", \
+                                "IMG_01002DOKZPU_c", \
+                                "IMG_01002DOL0UD_c", \
+                                "IMG_01002DOL1X4_c", \
+                                "IMG_01002DOL2PV_c", \
+                                "IMG_01002DOL3IM_c", \
+                                "IMG_01002DOL6GN_c", \
+                                "IMG_01002DOL55E_c", \
+                                "IMG_01002DOL435_c", \
                             ])
 
-    #plot.PlotExample_3D_2()
+        resultsPathString = resultsPathString + "\\"
 
-    images = np.array(list((seg.GetImage("SourceImages\\" + imgStrings[i] + ".jpg", cv2.IMREAD_GRAYSCALE) for i in range(numOfImgs))))
+        if objFunc == 1:
+            imgPathString = "SourceImages_OF1\\"
+        elif objFunc == 2:
+            imgPathString = "SourceImages_OF2\\"
+    else:
+        imgStrings = np.array([ "IMG_3909200", \
+                                "IMG_3909201", \
+                                "IMG_3909204", \
+                                "IMG_3909208", \
+                                "IMG_3909209", \
+                                "IMG_3909213", \
+                                "IMG_3909216", \
+                                "IMG_3909217", \
+                                "IMG_3909224", \
+                                "IMG_3909233", \
+                                "IMG_3909236", \
+                                "IMG_3909237", \
+                                "IMG_3909241", \
+                                "IMG_3909244", \
+                                "IMG_3909245"])
+
+        resultsPathString = resultsPathString + "_alt\\"
+
+        imgPathString = "SourceImages_Alternative\\"
+
+    images = np.array(list((seg.GetImage(imgPathString + imgStrings[i] + ".jpg", cv2.IMREAD_GRAYSCALE) for i in range(numOfImgs))))
     #images = np.array(list((cv2.fastNlMeansDenoising(images, None, 20, 7, 21) for i in range(numOfImgs))))
     graylevels = np.arange(256)
 
@@ -105,7 +129,7 @@ if __name__ == "__main__":
     testNumber = int(input())
 
     currentDate = time.strftime("%Y/%m/%d").replace("/", "_")
-    de_test_csv = open("ResultsOF" + str(objFunc) + "\\" + "de_test_OF" + str(objFunc) + "-" + currentDate + ".csv", mode = "a")
+    de_test_csv = open(resultsPathString + "de_test_OF" + str(objFunc) + "-" + currentDate + ".csv", mode = "a")
     csv_writer = csv.writer(de_test_csv, \
         delimiter=';', \
         quoting=csv.QUOTE_MINIMAL)
@@ -142,7 +166,7 @@ if __name__ == "__main__":
             timeString = currentDate
 
             for n in range(newImages.shape[0]):
-                segImgFileName = "ResultsOF" + str(objFunc) + "\\" + imgStrings[j] + "-" + "SEG_Test-" + str(n) + "-" + de_param_string + ".jpg"
+                segImgFileName = resultsPathString + imgStrings[j] + "-" + "SEG_Test-" + str(n) + "-" + de_param_string + ".jpg"
                 ocrEndResult = ""
 
                 # plot the DE and Segmentation results #
@@ -161,7 +185,7 @@ if __name__ == "__main__":
                 plotAxes[1] = plt.imshow(newImages[n], cmap='gray')
                 plotAxes[1].axes.set_title("Result of Image Segmentation")
                 plt.tight_layout()
-                plt.savefig("ResultsOF" + str(objFunc) + "\\" + imgStrings[j] + "-" + "SEG_Plot-" + str(n) + "-" + de_param_string + ".jpg", dpi=200)
+                plt.savefig(resultsPathString + imgStrings[j] + "-" + "SEG_Plot-" + str(n) + "-" + de_param_string + ".jpg", dpi=200)
                 #plt.show(block=False)
                 plt.close(plotFigure)
 
@@ -182,7 +206,7 @@ if __name__ == "__main__":
             newImage = obf.OF2_DoImageSegmentation(segments, images[j], rgbColorList)
         
             timeString = currentDate
-            segImgFileName = "ResultsOF" + str(objFunc) + "\\" + imgStrings[j] + "-" + "SEG_Test-" + de_param_string + ".jpg"
+            segImgFileName = resultsPathString + imgStrings[j] + "-" + "SEG_Test-" + de_param_string + ".jpg"
             ocrEndResult = ""
 
             # plot the DE and Segmentation results #
@@ -199,7 +223,7 @@ if __name__ == "__main__":
             plotAxes[1] = plt.imshow(newImage, cmap='gray')
             plotAxes[1].axes.set_title("Result of Image Segmentation")
             plt.tight_layout()
-            plt.savefig("ResultsOF" + str(objFunc) + "\\" + imgStrings[j] + "-" + "SEG_Plot-" + de_param_string + ".jpg", dpi=200)
+            plt.savefig(resultsPathString + imgStrings[j] + "-" + "SEG_Plot-" + de_param_string + ".jpg", dpi=200)
             plt.close(plotFigure)
 
             newImage = cv2.cvtColor(newImage, cv2.COLOR_RGB2BGR)
@@ -216,7 +240,7 @@ if __name__ == "__main__":
         valHistAxes.set_xlabel("Iteration Number")
         valHistAxes.set_ylabel("Fitness Value")
         valHistAxes.set_title("Fitness Value History through iterations of DE")
-        plt.savefig("ResultsOF" + str(objFunc) + "\\" + imgStrings[j] + "-" + "objFuncHist-" + de_param_string + ".jpg", dpi=200)
+        plt.savefig(resultsPathString + imgStrings[j] + "-" + "objFuncHist-" + de_param_string + ".jpg", dpi=200)
         plt.close(valHistFigure)
     ############################################################################################################
     ############################################################################################################
