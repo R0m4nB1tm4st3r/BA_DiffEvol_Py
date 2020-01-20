@@ -47,14 +47,14 @@ if __name__ == "__main__":
     F = 0.5
     Cr = 0.9
     o = 1.5
-    K = 2
+    K = 5
     G = 2000
     populationSize_OF2 = 10*K
     numOfImgs = 15
     objFunc = 1
     altImgsFlag = True
     imgPathString = ""
-    resultsPathString = "ResultsOF" + str(objFunc)
+    resultsPathString = "".join(["ResultsOF", str(objFunc)]) 
     
     if altImgsFlag == False:
         imgStrings = np.array([ "IMG_01002DOKR5B_c", \
@@ -74,7 +74,7 @@ if __name__ == "__main__":
                                 "IMG_01002DOL435_c", \
                             ])
 
-        resultsPathString = resultsPathString + "\\"
+        resultsPathString = "".join([resultsPathString, "\\"]) 
 
         if objFunc == 1:
             imgPathString = "SourceImages_OF1\\"
@@ -97,21 +97,21 @@ if __name__ == "__main__":
                                 "IMG_3909244", \
                                 "IMG_3909245"])
 
-        resultsPathString = resultsPathString + "_alt\\"
+        resultsPathString = "".join([resultsPathString, "_alt\\"])
 
         imgPathString = "SourceImages_Alternative\\"
 
-    images = np.array(list((seg.GetImage(imgPathString + imgStrings[i] + ".jpg", cv2.IMREAD_GRAYSCALE) for i in range(numOfImgs))))
-    #images = np.array(list((cv2.fastNlMeansDenoising(images, None, 20, 7, 21) for i in range(numOfImgs))))
+    images = np.array(list((seg.GetImage("".join([imgPathString, imgStrings[i], ".jpg"]), cv2.IMREAD_GRAYSCALE) for i in range(numOfImgs))))
+    #images = np.array(list((cv2.fastNlMeansDenoising(images, None, 10, 7, 21) for i in range(numOfImgs))))
     graylevels = np.arange(256)
 
+    rgbColorPool = (np.array([[  0,    0,    0], [255,  255,  255]], dtype=np.uint8), \
+                    np.array([[  0,    0,    0], [102,    0,    0], [255,  255,  255]], dtype=np.uint8), \
+                    np.array([[  0,    0,    0], [102,    0,    0], [102,  102,    0], [255,  255,  255]], dtype=np.uint8), \
+                    np.array([[  0,    0,    0], [102,    0,    0], [102,  102,    0], [ 76,  153,    0], [255,  255,  255]], dtype=np.uint8))
+
     # black, red, yellow, green, white
-    rgbColorList = np.array([   [  0,    0,    0], \
-                               # [102,    0,    0], \
-                               # [102,  102,    0], \
-                               # [ 76,  153,    0], \
-                                [255,  255,  255]], \
-                                dtype=np.uint8)
+    rgbColorList = rgbColorPool[K-2]
 
     if objFunc == 1:
         t_min = np.array([])
@@ -122,14 +122,14 @@ if __name__ == "__main__":
         minBounds_OF2 = np.array(list(repeat(0., K)))
         maxBounds_OF2 = np.array(list(repeat(255., K)))
 
-    de_param_string = "G_" + str(G) + "-" + "K_" + str(K) + "-" + "F_" + str(F) + "-" + "Cr_" + str(Cr)
+    de_param_string = "".join(["G_", str(G), "-", "K_", str(K), "-", "F_", str(F), "-", "Cr_", str(Cr)])
     ############################################################################################################
     ############################################################################################################
     print("Put in the Test Number to start with:")
     testNumber = int(input())
 
     currentDate = time.strftime("%Y/%m/%d").replace("/", "_")
-    de_test_csv = open(resultsPathString + "de_test_OF" + str(objFunc) + "-" + currentDate + ".csv", mode = "a")
+    de_test_csv = open("".join([resultsPathString, "de_test_OF", str(objFunc), "-", currentDate, ".csv"]), mode = "a")
     csv_writer = csv.writer(de_test_csv, \
         delimiter=';', \
         quoting=csv.QUOTE_MINIMAL)
@@ -166,7 +166,7 @@ if __name__ == "__main__":
             timeString = currentDate
 
             for n in range(newImages.shape[0]):
-                segImgFileName = resultsPathString + imgStrings[j] + "-" + "SEG_Test-" + str(n) + "-" + de_param_string + ".jpg"
+                segImgFileName = "".join([resultsPathString, imgStrings[j], "-", "SEG_Test-", str(n), "-", de_param_string, ".jpg"])
                 ocrEndResult = ""
 
                 # plot the DE and Segmentation results #
@@ -181,11 +181,11 @@ if __name__ == "__main__":
                 
                 plotAxes[0].set_xlabel("Graylevel g")
                 plotAxes[0].set_ylabel("n_Pixel_relative")
-                plotAxes[0].set_title("Mean Square Error: " + str(bestParams[1]))
+                plotAxes[0].set_title("".join(["Mean Square Error: ", str(bestParams[1])]))
                 plotAxes[1] = plt.imshow(newImages[n], cmap='gray')
                 plotAxes[1].axes.set_title("Result of Image Segmentation")
                 plt.tight_layout()
-                plt.savefig(resultsPathString + imgStrings[j] + "-" + "SEG_Plot-" + str(n) + "-" + de_param_string + ".jpg", dpi=200)
+                plt.savefig("".join([resultsPathString, imgStrings[j], "-", "SEG_Plot-", str(n), "-", de_param_string, ".jpg"]), dpi=200)
                 #plt.show(block=False)
                 plt.close(plotFigure)
 
@@ -194,7 +194,7 @@ if __name__ == "__main__":
                 seg_image = Image.open(segImgFileName)
                 ocrEndResult = seg.Tesseract_ReadTextFromImage(seg_image)
 
-                csv_writer.writerow([j+testNumber, imgStrings[j], str(n), K, G, str(F).replace(".", ","), str(Cr).replace(".", ","), ocrEndResult.encode(sys.stdout.encoding, errors='replace')])
+                csv_writer.writerow([j+testNumber, imgStrings[j], str(n), K, G, str(F).replace(".", ","), str(Cr).replace(".", ","), ocrEndResult])#.encode(sys.stdout.encoding, errors='replace')])
         elif objFunc == 2:
             testPopulation_OF2 = InitializePopulation(populationSize_OF2, K)
             objArgs_OF2 = (images[j],)
@@ -206,7 +206,7 @@ if __name__ == "__main__":
             newImage = obf.OF2_DoImageSegmentation(segments, images[j], rgbColorList)
         
             timeString = currentDate
-            segImgFileName = resultsPathString + imgStrings[j] + "-" + "SEG_Test-" + de_param_string + ".jpg"
+            segImgFileName = "".join([resultsPathString, imgStrings[j], "-", "SEG_Test-", de_param_string, ".jpg"])
             ocrEndResult = ""
 
             # plot the DE and Segmentation results #
@@ -219,11 +219,11 @@ if __name__ == "__main__":
                 plotAxes[0].annotate("c" + str(k+1), xy=(centers[0][k], np.amax(h)), )
             plotAxes[0].set_xlabel("Graylevel g")
             plotAxes[0].set_ylabel("n_Pixel_relative")
-            plotAxes[0].set_title("Cluster Distance Sum: " + str(centers[1]))
+            plotAxes[0].set_title("".join(["Cluster Distance Sum: ", str(centers[1])]))
             plotAxes[1] = plt.imshow(newImage, cmap='gray')
             plotAxes[1].axes.set_title("Result of Image Segmentation")
             plt.tight_layout()
-            plt.savefig(resultsPathString + imgStrings[j] + "-" + "SEG_Plot-" + de_param_string + ".jpg", dpi=200)
+            plt.savefig("".join([resultsPathString, imgStrings[j], "-", "SEG_Plot-", de_param_string, ".jpg"]), dpi=200)
             plt.close(plotFigure)
 
             newImage = cv2.cvtColor(newImage, cv2.COLOR_RGB2BGR)
@@ -231,7 +231,7 @@ if __name__ == "__main__":
             seg_image = Image.open(segImgFileName)
             ocrEndResult = seg.Tesseract_ReadTextFromImage(seg_image)
 
-            csv_writer.writerow([j+testNumber, imgStrings[j], K, G, str(F).replace(".", ","), str(Cr).replace(".", ","), ocrEndResult.encode(sys.stdout.encoding, errors='replace')])
+            csv_writer.writerow([j+testNumber, imgStrings[j], K, G, str(F).replace(".", ","), str(Cr).replace(".", ","), ocrEndResult])#.encode(sys.stdout.encoding, errors='replace')])
         
 
         # plot the Fitness values #
@@ -240,7 +240,7 @@ if __name__ == "__main__":
         valHistAxes.set_xlabel("Iteration Number")
         valHistAxes.set_ylabel("Fitness Value")
         valHistAxes.set_title("Fitness Value History through iterations of DE")
-        plt.savefig(resultsPathString + imgStrings[j] + "-" + "objFuncHist-" + de_param_string + ".jpg", dpi=200)
+        plt.savefig("".join([resultsPathString, imgStrings[j], "-", "objFuncHist-", de_param_string, ".jpg"]), dpi=200)
         plt.close(valHistFigure)
     ############################################################################################################
     ############################################################################################################
