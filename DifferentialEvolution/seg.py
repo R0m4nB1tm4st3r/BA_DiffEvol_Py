@@ -26,7 +26,7 @@ def SaveImage(image, path):
 #############################################################################################################################
 def Tesseract_ReadTextFromImage(image):
 
-    with PyTessBaseAPI(psm=PSM.SINGLE_LINE, oem=OEM.TESSERACT_LSTM_COMBINED) as api:
+    with PyTessBaseAPI(psm=PSM.SINGLE_LINE, oem=OEM.LSTM_ONLY) as api:
         api.SetImage(image)
         #boxes = api.GetComponentImages(RIL.TEXTLINE, True)
 
@@ -38,8 +38,8 @@ def Tesseract_ReadTextFromImage(image):
             #print(u"Box[{0}]: x={x}, y={y}, w={w}, h={h}, "
               #"confidence: {1}, text: {2}".format(i, conf, ocrResult, **box))
             #ocrEndResult += ocrResult
-        print("OCR Result:" + ocrResult)
-        print("Confidence: " + str(conf))
+        print("".join(["OCR Result: ", ocrResult]))
+        print("".join(["Confidence: ", str(conf)]))
 
     return ocrResult#ocrEndResult
 
