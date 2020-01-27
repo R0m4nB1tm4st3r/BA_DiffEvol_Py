@@ -26,7 +26,7 @@ def SaveImage(image, path):
 #############################################################################################################################
 def Tesseract_ReadTextFromImage(image):
 
-    with PyTessBaseAPI(psm=PSM.SINGLE_LINE, oem=OEM.TESSERACT_LSTM_COMBINED) as api:
+    with PyTessBaseAPI(psm=PSM.SINGLE_LINE, oem=OEM.LSTM_ONLY) as api:
         api.SetImage(image)
         #boxes = api.GetComponentImages(RIL.TEXTLINE, True)
 

@@ -47,12 +47,13 @@ if __name__ == "__main__":
     F = 0.5
     Cr = 0.9
     o = 1.5
-    K = 3
-    G = 2000
+    K = 4
+    G = 500
     populationSize_OF2 = 10*K
     numOfImgs = 15
     objFunc = 1
-    altImgsFlag = True
+    altImgsFlag = False
+    denoiseFlag = False
     imgPathString = ""
     resultsPathString = "".join(["ResultsOF", str(objFunc)]) 
     
@@ -99,7 +100,12 @@ if __name__ == "__main__":
         imgPathString = "SourceImages_Alternative\\"
 
     images = np.array(list((seg.GetImage("".join([imgPathString, imgStrings[i], ".jpg"]), cv2.IMREAD_GRAYSCALE) for i in range(numOfImgs))))
-    #images = np.array(list((cv2.fastNlMeansDenoising(images, None, 10, 7, 21) for i in range(numOfImgs))))
+    if denoiseFlag == True:
+        images = np.array(list((cv2.fastNlMeansDenoising(images[i], None, 20, 7, 21) for i in range(numOfImgs))))
+    #   for c in range(numOfImgs):
+        #   seg.SaveImage(images[c], "".join([imgPathString, imgStrings[c], "-denoised.jpg"]))
+        #   seg.ShowImage(images[c])
+
     graylevels = np.arange(256)
 
     rgbColorPool = (np.array([[  0,    0,    0], [255,  255,  255]], dtype=np.uint8), \
@@ -125,8 +131,18 @@ if __name__ == "__main__":
     print("Put in the Test Number to start with:")
     testNumber = int(input())
 
-    currentDate = time.strftime("%Y/%m/%d").replace("/", "_")
-    de_test_csv = open("".join([resultsPathString, "de_test_OF", str(objFunc), "-", currentDate, ".csv"]), mode = "a")
+    #currentDate = time.strftime("%Y/%m/%d").replace("/", "_")
+    if altImgsFlag == True:
+        if denoiseFlag == True:
+            de_test_csv = open("".join([resultsPathString, "de_test_OF", str(objFunc), "_alt_denoised", ".csv"]), mode = "a")
+        else:
+            de_test_csv = open("".join([resultsPathString, "de_test_OF", str(objFunc), "_alt", ".csv"]), mode = "a")
+    else:
+        if denoiseFlag == True:
+            de_test_csv = open("".join([resultsPathString, "de_test_OF", str(objFunc), "_denoised.csv"]), mode = "a")
+        else:
+            de_test_csv = open("".join([resultsPathString, "de_test_OF", str(objFunc), ".csv"]), mode = "a")
+
     csv_writer = csv.writer(de_test_csv, \
         delimiter=';', \
         quoting=csv.QUOTE_MINIMAL)
@@ -160,10 +176,14 @@ if __name__ == "__main__":
                 ])
             thresholdindices = np.array([i for i in range(thresholdCombinations.shape[0]) if np.amin(thresholdCombinations[i] != -1)])
 
-            timeString = currentDate
+            #timeString = currentDate
 
             for n in range(newImages.shape[0]):
-                segImgFileName = "".join([resultsPathString, imgStrings[j], "-", de_param_string, "-", "SEG_Test-", str(n), ".jpg"])
+                if denoiseFlag == True:
+                    segImgFileName = "".join([resultsPathString, imgStrings[j], "_denoised-", de_param_string, "-", "SEG_Test-", str(n), ".jpg"])
+                else:
+                    segImgFileName = "".join([resultsPathString, imgStrings[j], "-", de_param_string, "-", "SEG_Test-", str(n), ".jpg"])
+                
                 ocrEndResult = ""
 
                 # plot the DE and Segmentation results #
@@ -180,9 +200,16 @@ if __name__ == "__main__":
                 plotAxes[0].set_ylabel("n_Pixel_relative")
                 plotAxes[0].set_title("".join(["Mean Square Error: ", str(bestParams[1])]))
                 plotAxes[1] = plt.imshow(newImages[n], cmap='gray')
-                plotAxes[1].axes.set_title("Result of Image Segmentation")
+                if denoiseFlag == True:
+                    plotAxes[1].axes.set_title("Result of Image Segmentation (with denoised Image)")
+                    plotString = "".join([resultsPathString, imgStrings[j], "_denoised-", de_param_string, "-", "SEG_Plot-", str(n), ".jpg"])
+                else:
+                    plotAxes[1].axes.set_title("Result of Image Segmentation")
+                    plotString = "".join([resultsPathString, imgStrings[j], "-", de_param_string, "-", "SEG_Plot-", str(n), ".jpg"])
+
                 plt.tight_layout()
-                plt.savefig("".join([resultsPathString, imgStrings[j], "-", de_param_string, "-", "SEG_Plot-", str(n), ".jpg"]), dpi=200)
+                plt.savefig(plotString, dpi=200)
+                
                 #plt.show(block=False)
                 plt.close(plotFigure)
 
@@ -202,8 +229,11 @@ if __name__ == "__main__":
             segments = obf.OF2_GetSegments(centers[0], images[j])
             newImage = obf.OF2_DoImageSegmentation(segments, images[j], rgbColorList)
         
-            timeString = currentDate
-            segImgFileName = "".join([resultsPathString, imgStrings[j], "-", de_param_string, "-", "SEG_Test", ".jpg"])
+            #timeString = currentDate
+            if denoiseFlag == True:
+                segImgFileName = "".join([resultsPathString, imgStrings[j], "_denoised-", de_param_string, "-", "SEG_Test", ".jpg"])
+            else:
+                segImgFileName = "".join([resultsPathString, imgStrings[j], "-", de_param_string, "-", "SEG_Test", ".jpg"])
             ocrEndResult = ""
 
             # plot the DE and Segmentation results #
@@ -218,9 +248,15 @@ if __name__ == "__main__":
             plotAxes[0].set_ylabel("n_Pixel_relative")
             plotAxes[0].set_title("".join(["Cluster Distance Sum: ", str(centers[1])]))
             plotAxes[1] = plt.imshow(newImage, cmap='gray')
-            plotAxes[1].axes.set_title("Result of Image Segmentation")
+            if denoiseFlag == True:
+                plotAxes[1].axes.set_title("Result of Image Segmentation (with denoised Image")
+                plotString = "".join([resultsPathString, imgStrings[j], "_denoised-", de_param_string, "-", "SEG_Plot", ".jpg"])
+            else:
+                plotAxes[1].axes.set_title("Result of Image Segmentation")
+                plotString = "".join([resultsPathString, imgStrings[j], "-", de_param_string, "-", "SEG_Plot", ".jpg"])
+
             plt.tight_layout()
-            plt.savefig("".join([resultsPathString, imgStrings[j], "-", de_param_string, "-", "SEG_Plot", ".jpg"]), dpi=200)
+            plt.savefig(plotString, dpi=200)
             plt.close(plotFigure)
 
             newImage = cv2.cvtColor(newImage, cv2.COLOR_RGB2BGR)
@@ -237,7 +273,11 @@ if __name__ == "__main__":
         valHistAxes.set_xlabel("Iteration Number")
         valHistAxes.set_ylabel("Fitness Value")
         valHistAxes.set_title("Fitness Value History through iterations of DE")
-        plt.savefig("".join([resultsPathString, imgStrings[j], "-", de_param_string, "-", "objFuncHist-", ".jpg"]), dpi=200)
+        if denoiseFlag == True:
+            plt.savefig("".join([resultsPathString, imgStrings[j], "_denoised-", de_param_string, "-", "objFuncHist-", ".jpg"]), dpi=200)
+        else:
+            plt.savefig("".join([resultsPathString, imgStrings[j], "-", de_param_string, "-", "objFuncHist-", ".jpg"]), dpi=200)
+
         plt.close(valHistFigure)
     ############################################################################################################
     ############################################################################################################
