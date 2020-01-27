@@ -12,7 +12,7 @@ import sys
 import diff_evol as de
 import objFuncs as obf
 import plot
-import seg
+import img_help as ih
 
 from PIL import Image
 from itertools import repeat
@@ -47,12 +47,12 @@ if __name__ == "__main__":
     F = 0.5
     Cr = 0.9
     o = 1.5
-    K = 4
-    G = 500
+    K = 3
+    G = 50
     populationSize_OF2 = 10*K
     numOfImgs = 15
-    objFunc = 1
-    altImgsFlag = False
+    objFunc = 2
+    altImgsFlag = True
     denoiseFlag = False
     imgPathString = ""
     resultsPathString = "".join(["ResultsOF", str(objFunc)]) 
@@ -99,12 +99,12 @@ if __name__ == "__main__":
 
         imgPathString = "SourceImages_Alternative\\"
 
-    images = np.array(list((seg.GetImage("".join([imgPathString, imgStrings[i], ".jpg"]), cv2.IMREAD_GRAYSCALE) for i in range(numOfImgs))))
+    images = np.array(list((ih.GetImage("".join([imgPathString, imgStrings[i], ".jpg"]), cv2.IMREAD_GRAYSCALE) for i in range(numOfImgs))))
     if denoiseFlag == True:
         images = np.array(list((cv2.fastNlMeansDenoising(images[i], None, 20, 7, 21) for i in range(numOfImgs))))
-    #   for c in range(numOfImgs):
-        #   seg.SaveImage(images[c], "".join([imgPathString, imgStrings[c], "-denoised.jpg"]))
-        #   seg.ShowImage(images[c])
+        #for c in range(numOfImgs):
+            #ih.SaveImage(images[c], "".join([imgPathString, imgStrings[c], "-denoised.jpg"]))
+            #ih.ShowImage(images[c])
 
     graylevels = np.arange(256)
 
@@ -214,9 +214,9 @@ if __name__ == "__main__":
                 plt.close(plotFigure)
 
                 newImages[n] = cv2.cvtColor(newImages[n], cv2.COLOR_RGB2BGR)
-                seg.SaveImage(newImages[n], segImgFileName)
+                ih.SaveImage(newImages[n], segImgFileName)
                 seg_image = Image.open(segImgFileName)
-                ocrEndResult = seg.Tesseract_ReadTextFromImage(seg_image)
+                ocrEndResult = ih.Tesseract_ReadTextFromImage(seg_image)
 
                 csv_writer.writerow([j+testNumber, imgStrings[j], str(n), K, G, str(F).replace(".", ","), str(Cr).replace(".", ","), ocrEndResult.encode("utf8")])#.encode(sys.stdout.encoding, errors='replace')])
         elif objFunc == 2:
@@ -260,9 +260,9 @@ if __name__ == "__main__":
             plt.close(plotFigure)
 
             newImage = cv2.cvtColor(newImage, cv2.COLOR_RGB2BGR)
-            seg.SaveImage(newImage, segImgFileName)
+            ih.SaveImage(newImage, segImgFileName)
             seg_image = Image.open(segImgFileName)
-            ocrEndResult = seg.Tesseract_ReadTextFromImage(seg_image)
+            ocrEndResult = ih.Tesseract_ReadTextFromImage(seg_image)
 
             csv_writer.writerow([j+testNumber, imgStrings[j], K, G, str(F).replace(".", ","), str(Cr).replace(".", ","), ocrEndResult.encode("utf8")])#.encode(sys.stdout.encoding, errors='replace')])
         

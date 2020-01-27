@@ -33,7 +33,7 @@
     <Compile Include="plot.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="seg.py" />
+    <Compile Include="img_help.py" />
   </ItemGroup>
   <ItemGroup>
     <InterpreterReference Include="Global|ContinuumAnalytics|Anaconda37-64" />

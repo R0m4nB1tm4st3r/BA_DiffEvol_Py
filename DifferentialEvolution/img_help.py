@@ -42,4 +42,3 @@ def Tesseract_ReadTextFromImage(image):
         print("".join(["Confidence: ", str(conf)]))
 
     return ocrResult#ocrEndResult
-
