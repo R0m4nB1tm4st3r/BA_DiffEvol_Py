@@ -47,12 +47,12 @@ if __name__ == "__main__":
     F = 0.5
     Cr = 0.9
     o = 1.5
-    K = 2
-    G = 20
+    K = 5
+    G = 50
     populationSize_OF2 = 10*K
     numOfImgs = 15
     objFunc = 2
-    altImgsFlag = False
+    altImgsFlag = True
     denoiseFlag = True
     imgPathString = ""
     resultsPathString = "".join(["ResultsOF", str(objFunc)]) 
