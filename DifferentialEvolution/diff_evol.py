@@ -145,6 +145,9 @@ class DE_Handler(object):
             #plot.LinePlot3D(self.x, self.y, self.z)
         return best, bestValueHistory
 #############################################################################################################################
+    def DE_Set_G(self, G_new):
+        self.G = G_new
+#############################################################################################################################
     def __getstate__(self):
         self_dict = self.__dict__.copy()
         del self_dict['processPool']

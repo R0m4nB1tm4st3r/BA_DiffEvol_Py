@@ -42,18 +42,17 @@ def InitializePopulation(Np, paramNum):
 if __name__ == "__main__":
 ############################################################################################################
 ############################################################################################################
-    # F: 0.25, 0.5, 0.25, 0.8
-    # Cr: 0.8, 0.9, 0.1, 1.0
     F = 0.5
     Cr = 0.9
     o = 1.5
     K = 5
-    G = 50
+    G_List = [5, 10, 20, 50]
+    
     populationSize_OF2 = 10*K
     numOfImgs = 15
     objFunc = 2
-    altImgsFlag = True
-    denoiseFlag = True
+    altImgsFlag = False
+    denoiseFlag = False
     imgPathString = ""
     resultsPathString = "".join(["ResultsOF", str(objFunc)]) 
     
@@ -125,7 +124,7 @@ if __name__ == "__main__":
         minBounds_OF2 = np.array(list(repeat(0., K)))
         maxBounds_OF2 = np.array(list(repeat(255., K)))
 
-    de_param_string = "".join(["K_", str(K), "-", "G_", str(G), "-", "F_", str(F), "-", "Cr_", str(Cr)])
+    #de_param_string = "".join(["K_", str(K), "-", "G_", str(G), "-", "F_", str(F), "-", "Cr_", str(Cr)])
     ############################################################################################################
     ############################################################################################################
     print("Put in the Test Number to start with:")
@@ -155,129 +154,157 @@ if __name__ == "__main__":
     ############################################################################################################
     ############################################################################################################
     for j in range(numOfImgs):
-        print("Optimizing...")
+        G_current = 0
+        h = obf.OF1_CalculateNormalizedHistogram(images[j])
         np.random.seed(123)
 
-        # Initialize needed parameters for DE #
-        h = obf.OF1_CalculateNormalizedHistogram(images[j])
-        
         if objFunc == 1:
             test_population = InitializePopulation(3*10*K, 3*K)
             objArgs = (K, graylevels, h, o)
-            deHandler = de.DE_Handler(F, Cr, G, 3*10*K, test_population, obf.OF1_CalcErrorEstimation, True, t_min, t_max, objArgs)
+            deHandler = de.DE_Handler(F, Cr, G_current, 3*10*K, test_population, obf.OF1_CalcErrorEstimation, True, t_min, t_max, objArgs)
+        elif objFunc == 2:
+            testPopulation_OF2 = InitializePopulation(populationSize_OF2, K)
+            objArgs_OF2 = (images[j],)
+            deHandler = de.DE_Handler(F, Cr, G_current, populationSize_OF2, testPopulation_OF2, obf.OF2_Calc_InterClusterDistance, True, minBounds_OF2, maxBounds_OF2, objArgs_OF2)
 
-            bestParams, bestValueHistory = deHandler.DE_GetBestParameters()
-            bestMember = bestParams[0]
-            thresholdValues = obf.OF1_CalculateThresholdValues(bestMember, K)
-            thresholdCombinations = np.array(list(product(*thresholdValues)))
-            newImages = np.array([obf.OF1_DoImageSegmentation(images[j], thresholdCombinations[t], K, rgbColorList) \
-                for t in range(thresholdCombinations.shape[0]) \
-                if np.amin(thresholdCombinations[t]) != -1 \
-                ])
-            thresholdindices = np.array([i for i in range(thresholdCombinations.shape[0]) if np.amin(thresholdCombinations[i] != -1)])
+        for G in G_List:
+            de_param_string = "".join(["K_", str(K), "-", "G_", str(G), "-", "F_", str(F), "-", "Cr_", str(Cr)])
 
-            #timeString = currentDate
+            #if G == 100 and j == 8:
+                #continue
 
-            for n in range(newImages.shape[0]):
-                if denoiseFlag == True:
-                    segImgFileName = "".join([resultsPathString, imgStrings[j], "_denoised-", de_param_string, "-", "SEG_Test-", str(n), ".jpg"])
-                else:
-                    segImgFileName = "".join([resultsPathString, imgStrings[j], "-", de_param_string, "-", "SEG_Test-", str(n), ".jpg"])
+            print("Optimizing...")
+            
+
+            # Initialize needed parameters for DE #
+            #h = obf.OF1_CalculateNormalizedHistogram(images[j])
+            deHandler.DE_Set_G(G - G_current)
+        
+            if objFunc == 1:
+                #test_population = InitializePopulation(3*10*K, 3*K)
+                #objArgs = (K, graylevels, h, o)
+                #deHandler = de.DE_Handler(F, Cr, G, 3*10*K, test_population, obf.OF1_CalcErrorEstimation, True, t_min, t_max, objArgs)
+
+                bestParams, bestValueHistory = deHandler.DE_GetBestParameters()
+                bestMember = bestParams[0]
+                thresholdValues = obf.OF1_CalculateThresholdValues(bestMember, K)
+                thresholdCombinations = np.array(list(product(*thresholdValues)))
+                newImages = np.array([obf.OF1_DoImageSegmentation(images[j], thresholdCombinations[t], K, rgbColorList) \
+                    for t in range(thresholdCombinations.shape[0]) \
+                    if np.amin(thresholdCombinations[t]) != -1 \
+                    ])
+                thresholdindices = np.array([i for i in range(thresholdCombinations.shape[0]) if np.amin(thresholdCombinations[i] != -1)])
+
+                #timeString = currentDate
+
+                for n in range(newImages.shape[0]):
+                    if denoiseFlag == True:
+                        segImgFileName = "".join([resultsPathString, imgStrings[j], "_denoised-", de_param_string, "-", "SEG_Test-", str(n), ".jpg"])
+                    else:
+                        segImgFileName = "".join([resultsPathString, imgStrings[j], "-", de_param_string, "-", "SEG_Test-", str(n), ".jpg"])
                 
+                    ocrEndResult = ""
+
+                    # plot the DE and Segmentation results #
+                    plotFigure, plotAxes = plot.CreateSubplotGrid(2, 1, False)
+                    plotFigure.set_dpi(200)
+                    plotAxes[0].plot(graylevels, h)
+                    plotAxes[0].plot(graylevels, obf.OF1_SumOfGauss(bestMember, K, graylevels))
+                    plotAxes[0].legend(("Histogram of the original Image", "Gaussian Approximation of the Histogram", ))
+                    plotAxes[0].vlines(thresholdCombinations[thresholdindices[n]], 0, np.amax(h), label="Threshold Values")
+                    for k in range(thresholdCombinations[thresholdindices[n]].size):
+                        plotAxes[0].annotate("T" + str(k+1), xy=(thresholdCombinations[thresholdindices[n], k], np.amax(h)), )
+                
+                    plotAxes[0].set_xlabel("Graylevel g")
+                    plotAxes[0].set_ylabel("n_Pixel_relative")
+                    plotAxes[0].set_title("".join(["Mean Square Error: ", str(bestParams[1])]))
+                    plotAxes[1] = plt.imshow(newImages[n], cmap='gray')
+                    if denoiseFlag == True:
+                        plotAxes[1].axes.set_title("Result of Image Segmentation (with denoised Image)")
+                        plotString = "".join([resultsPathString, imgStrings[j], "_denoised-", de_param_string, "-", "SEG_Plot-", str(n), ".jpg"])
+                    else:
+                        plotAxes[1].axes.set_title("Result of Image Segmentation")
+                        plotString = "".join([resultsPathString, imgStrings[j], "-", de_param_string, "-", "SEG_Plot-", str(n), ".jpg"])
+
+                    plt.tight_layout()
+                    plt.savefig(plotString, dpi=200)
+                
+                    #plt.show(block=False)
+                    plt.close(plotFigure)
+
+                    newImages[n] = cv2.cvtColor(newImages[n], cv2.COLOR_RGB2BGR)
+                    ih.SaveImage(newImages[n], segImgFileName)
+                    #newImages[n] = cv2.cvtColor(newImages[n], cv2.COLOR_BGR2RGB)
+                    newImageGray = cv2.cvtColor(newImages[n], cv2.COLOR_BGR2GRAY)
+                    #seg_image = Image.open(segImgFileName)
+                    seg_image = Image.fromarray(newImageGray, mode='L')
+                    #Image._show(seg_image)
+                    ocrEndResult = ih.Tesseract_ReadTextFromImage(seg_image)
+
+                    csv_writer.writerow([testNumber, imgStrings[j], str(n), K, G, str(F).replace(".", ","), str(Cr).replace(".", ","), ocrEndResult.encode("utf8")])#.encode(sys.stdout.encoding, errors='replace')])
+            elif objFunc == 2:
+                #testPopulation_OF2 = InitializePopulation(populationSize_OF2, K)
+                #objArgs_OF2 = (images[j],)
+                #deHandler = de.DE_Handler(F, Cr, G, populationSize_OF2, testPopulation_OF2, obf.OF2_Calc_InterClusterDistance, True, minBounds_OF2, maxBounds_OF2, objArgs_OF2)
+            
+                centers, bestValueHistory = deHandler.DE_GetBestParameters()
+
+                segments = obf.OF2_GetSegments(centers[0], images[j])
+                newImage = obf.OF2_DoImageSegmentation(segments, images[j], rgbColorList)
+        
+                #timeString = currentDate
+                if denoiseFlag == True:
+                    segImgFileName = "".join([resultsPathString, imgStrings[j], "_denoised-", de_param_string, "-", "SEG_Test", ".jpg"])
+                else:
+                    segImgFileName = "".join([resultsPathString, imgStrings[j], "-", de_param_string, "-", "SEG_Test", ".jpg"])
                 ocrEndResult = ""
 
                 # plot the DE and Segmentation results #
                 plotFigure, plotAxes = plot.CreateSubplotGrid(2, 1, False)
                 plotFigure.set_dpi(200)
                 plotAxes[0].plot(graylevels, h)
-                plotAxes[0].plot(graylevels, obf.OF1_SumOfGauss(bestMember, K, graylevels))
-                plotAxes[0].legend(("Histogram of the original Image", "Gaussian Approximation of the Histogram", ))
-                plotAxes[0].vlines(thresholdCombinations[thresholdindices[n]], 0, np.amax(h), label="Threshold Values")
-                for k in range(thresholdCombinations[thresholdindices[n]].size):
-                    plotAxes[0].annotate("T" + str(k+1), xy=(thresholdCombinations[thresholdindices[n], k], np.amax(h)), )
-                
+                plotAxes[0].legend(("Histogram of the original Image", ))
+                plotAxes[0].vlines(centers[0], 0, np.amax(h), label="Cluster Centers")
+                for k in range(K):
+                    plotAxes[0].annotate("c" + str(k+1), xy=(centers[0][k], np.amax(h)), )
                 plotAxes[0].set_xlabel("Graylevel g")
                 plotAxes[0].set_ylabel("n_Pixel_relative")
-                plotAxes[0].set_title("".join(["Mean Square Error: ", str(bestParams[1])]))
-                plotAxes[1] = plt.imshow(newImages[n], cmap='gray')
+                plotAxes[0].set_title("".join(["Cluster Distance Sum: ", str(centers[1])]))
+                plotAxes[1] = plt.imshow(newImage, cmap='gray')
                 if denoiseFlag == True:
-                    plotAxes[1].axes.set_title("Result of Image Segmentation (with denoised Image)")
-                    plotString = "".join([resultsPathString, imgStrings[j], "_denoised-", de_param_string, "-", "SEG_Plot-", str(n), ".jpg"])
+                    plotAxes[1].axes.set_title("Result of Image Segmentation (with denoised Image")
+                    plotString = "".join([resultsPathString, imgStrings[j], "_denoised-", de_param_string, "-", "SEG_Plot", ".jpg"])
                 else:
                     plotAxes[1].axes.set_title("Result of Image Segmentation")
-                    plotString = "".join([resultsPathString, imgStrings[j], "-", de_param_string, "-", "SEG_Plot-", str(n), ".jpg"])
+                    plotString = "".join([resultsPathString, imgStrings[j], "-", de_param_string, "-", "SEG_Plot", ".jpg"])
 
                 plt.tight_layout()
                 plt.savefig(plotString, dpi=200)
-                
-                #plt.show(block=False)
                 plt.close(plotFigure)
 
-                newImages[n] = cv2.cvtColor(newImages[n], cv2.COLOR_RGB2BGR)
-                ih.SaveImage(newImages[n], segImgFileName)
+                newImage = cv2.cvtColor(newImage, cv2.COLOR_RGB2BGR)
+                ih.SaveImage(newImage, segImgFileName)
                 seg_image = Image.open(segImgFileName)
                 ocrEndResult = ih.Tesseract_ReadTextFromImage(seg_image)
 
-                csv_writer.writerow([j+testNumber, imgStrings[j], str(n), K, G, str(F).replace(".", ","), str(Cr).replace(".", ","), ocrEndResult.encode("utf8")])#.encode(sys.stdout.encoding, errors='replace')])
-        elif objFunc == 2:
-            testPopulation_OF2 = InitializePopulation(populationSize_OF2, K)
-            objArgs_OF2 = (images[j],)
-            deHandler = de.DE_Handler(F, Cr, G, populationSize_OF2, testPopulation_OF2, obf.OF2_Calc_InterClusterDistance, True, minBounds_OF2, maxBounds_OF2, objArgs_OF2)
-            
-            centers, bestValueHistory = deHandler.DE_GetBestParameters()
-
-            segments = obf.OF2_GetSegments(centers[0], images[j])
-            newImage = obf.OF2_DoImageSegmentation(segments, images[j], rgbColorList)
-        
-            #timeString = currentDate
-            if denoiseFlag == True:
-                segImgFileName = "".join([resultsPathString, imgStrings[j], "_denoised-", de_param_string, "-", "SEG_Test", ".jpg"])
-            else:
-                segImgFileName = "".join([resultsPathString, imgStrings[j], "-", de_param_string, "-", "SEG_Test", ".jpg"])
-            ocrEndResult = ""
-
-            # plot the DE and Segmentation results #
-            plotFigure, plotAxes = plot.CreateSubplotGrid(2, 1, False)
-            plotFigure.set_dpi(200)
-            plotAxes[0].plot(graylevels, h)
-            plotAxes[0].legend(("Histogram of the original Image", ))
-            plotAxes[0].vlines(centers[0], 0, np.amax(h), label="Cluster Centers")
-            for k in range(K):
-                plotAxes[0].annotate("c" + str(k+1), xy=(centers[0][k], np.amax(h)), )
-            plotAxes[0].set_xlabel("Graylevel g")
-            plotAxes[0].set_ylabel("n_Pixel_relative")
-            plotAxes[0].set_title("".join(["Cluster Distance Sum: ", str(centers[1])]))
-            plotAxes[1] = plt.imshow(newImage, cmap='gray')
-            if denoiseFlag == True:
-                plotAxes[1].axes.set_title("Result of Image Segmentation (with denoised Image")
-                plotString = "".join([resultsPathString, imgStrings[j], "_denoised-", de_param_string, "-", "SEG_Plot", ".jpg"])
-            else:
-                plotAxes[1].axes.set_title("Result of Image Segmentation")
-                plotString = "".join([resultsPathString, imgStrings[j], "-", de_param_string, "-", "SEG_Plot", ".jpg"])
-
-            plt.tight_layout()
-            plt.savefig(plotString, dpi=200)
-            plt.close(plotFigure)
-
-            newImage = cv2.cvtColor(newImage, cv2.COLOR_RGB2BGR)
-            ih.SaveImage(newImage, segImgFileName)
-            seg_image = Image.open(segImgFileName)
-            ocrEndResult = ih.Tesseract_ReadTextFromImage(seg_image)
-
-            csv_writer.writerow([j+testNumber, imgStrings[j], K, G, str(F).replace(".", ","), str(Cr).replace(".", ","), ocrEndResult.encode("utf8")])#.encode(sys.stdout.encoding, errors='replace')])
+                csv_writer.writerow([testNumber, imgStrings[j], K, G, str(F).replace(".", ","), str(Cr).replace(".", ","), ocrEndResult.encode("utf8")])#.encode(sys.stdout.encoding, errors='replace')])
         
 
-        # plot the Fitness values #
-        valHistFigure, valHistAxes = plot.CreateSubplotGrid(1, 1, False)
-        valHistAxes.plot(range(1, G+1), bestValueHistory)
-        valHistAxes.set_xlabel("Iteration Number")
-        valHistAxes.set_ylabel("Fitness Value")
-        valHistAxes.set_title("Fitness Value History through iterations of DE")
-        if denoiseFlag == True:
-            plt.savefig("".join([resultsPathString, imgStrings[j], "_denoised-", de_param_string, "-", "objFuncHist-", ".jpg"]), dpi=200)
-        else:
-            plt.savefig("".join([resultsPathString, imgStrings[j], "-", de_param_string, "-", "objFuncHist-", ".jpg"]), dpi=200)
+            # plot the Fitness values #
+            valHistFigure, valHistAxes = plot.CreateSubplotGrid(1, 1, False)
+            #valHistAxes.plot(range(1, G+1), bestValueHistory)
+            valHistAxes.plot(range(1, G-G_current+1), bestValueHistory)
+            valHistAxes.set_xlabel("Iteration Number")
+            valHistAxes.set_ylabel("Fitness Value")
+            valHistAxes.set_title("Fitness Value History through iterations of DE")
+            if denoiseFlag == True:
+                plt.savefig("".join([resultsPathString, imgStrings[j], "_denoised-", de_param_string, "-", "objFuncHist-", ".jpg"]), dpi=200)
+            else:
+                plt.savefig("".join([resultsPathString, imgStrings[j], "-", de_param_string, "-", "objFuncHist-", ".jpg"]), dpi=200)
 
-        plt.close(valHistFigure)
+            plt.close(valHistFigure)
+
+            testNumber = testNumber + 1
+            G_current = G
     ############################################################################################################
     ############################################################################################################
