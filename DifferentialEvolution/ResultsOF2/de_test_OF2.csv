@@ -134,3 +134,6 @@ Test Number;Image Name;Number of Classes K;Number of Iterations G;Mutation Facto
 43;IMG_01002DOL435_c;2;5;0,5;0,9;b''
 44;IMG_01002DOL435_c;2;10;0,5;0,9;b''
 45;IMG_01002DOL435_c;2;20;0,5;0,9;b''
+91;IMG_01002DOKR5B_c;4;5;0,5;0,9;b''
+92;IMG_01002DOKR5B_c;4;10;0,5;0,9;b''
+93;IMG_01002DOKR5B_c;4;20;0,5;0,9;"b'%%%g%;&ffi\xe2\x80\x98z \xe2\x80\x98:;z\xe2\x80\x99gf\xe2\x80\x99} }\xe2\x80\x98: gg%%%\xc3\xa9%%\xc3\xa9i%%gg\n'"

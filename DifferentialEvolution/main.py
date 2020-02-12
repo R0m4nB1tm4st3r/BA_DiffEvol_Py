@@ -45,14 +45,15 @@ if __name__ == "__main__":
     F = 0.5
     Cr = 0.9
     o = 1.5
-    K = 5
+    K = 2
     G_List = [5, 10, 20]
+    #G_List = [100,200,500,1000,2000]
     
     populationSize_OF2 = 10*K
     numOfImgs = 15
     objFunc = 2
-    altImgsFlag = True
-    denoiseFlag = True
+    altImgsFlag = False
+    denoiseFlag = False
     imgPathString = ""
     resultsPathString = "".join(["ResultsOF", str(objFunc)]) 
     
@@ -92,7 +93,8 @@ if __name__ == "__main__":
                                 "IMG_3909237", \
                                 "IMG_3909241", \
                                 "IMG_3909244", \
-                                "IMG_3909245"])
+                                "IMG_3909245", \
+                                ])
 
         resultsPathString = "".join([resultsPathString, "_alt\\"])
 
